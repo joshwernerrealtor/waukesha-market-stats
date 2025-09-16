@@ -54,41 +54,49 @@ export default async function handler(req, res) {
     const pdfParse = mod.default || mod;
     const { text = "" } = await pdfParse(Buffer.from(ab));
 
-   // 3) Extract metrics (expanded patterns for RPR wording)
+   // 3) Extract metrics (wider patterns tolerate line breaks / extra words)
 function firstNum(patterns, text) {
   for (const re of patterns) {
     const m = text.match(re);
-    if (m?.[1]) return toNum(takeNum(m));
+    if (m?.[1]) {
+      const raw = (m[1] || "").toString().replace(/[,$\s]/g, "");
+      if (raw !== "" && !Number.isNaN(Number(raw))) return Number(raw);
+    }
   }
   return null;
 }
 
 const medianPrice = firstNum([
-  /Median\s+(?:Sale|Sold|Sales)\s+Price[^0-9$]*\$?\s*([\d,]+)/i,
-  /Median\s+Price[^0-9$]*\$?\s*([\d,]+)/i
+  /Median\s+(?:Sale|Sold|Sales)\s+Price[\s\S]{0,40}?\$?\s*([\d,]+)/i,
+  /Median\s+Price[\s\S]{0,40}?\$?\s*([\d,]+)/i
 ], text);
 
 const closed = firstNum([
-  /\bClosed\s+Sales\b[^0-9]*([\d,]+)/i,
-  /\bSales\s+Closed\b[^0-9]*([\d,]+)/i,
-  /\bClosings\b[^0-9]*([\d,]+)/i
+  /\bClosed\s+Sales\b[\s\S]{0,40}?([\d,]+)/i,
+  /\bSales\s+Closed\b[\s\S]{0,40}?([\d,]+)/i,
+  /\bClosings\b[\s\S]{0,40}?([\d,]+)/i
 ], text);
 
-const dom = firstNum([
-  /\bMedian\s+Days\s+on\s+Market\b[^0-9]*([\d,]+)/i,
-  /\bDays\s+on\s+Market\b[^0-9]*([\d,]+)/i,
-  /\bMedian\s+DOM\b[^0-9]*([\d,]+)/i,
-  /\bDOM\b[^0-9]*([\d,]+)/i
+// DOM: try multiple phrasings; also catch "… 23 days"
+let dom = firstNum([
+  /\bMedian\s+Days\s+on\s+Market\b[\s\S]{0,40}?([\d,]+)/i,
+  /\bDays\s+on\s+Market\b[\s\S]{0,40}?([\d,]+)/i,
+  /\bMedian\s+DOM\b[\s\S]{0,20}?([\d,]+)/i,
+  /\bDOM\b[\s\S]{0,10}?([\d,]+)/i
 ], text);
+if (dom == null) {
+  const m = text.match(/\bDays\s+on\s+Market\b[\s\S]{0,40}?([0-9]{1,3})\s*days?/i);
+  if (m?.[1]) dom = Number(m[1]);
+}
 
 const monthsSupply = firstNum([
-  /Months\s+of\s+(?:Inventory|Supply)\s*([\d.]+)/i,
-  /Mos\.?\s+Supply\s*([\d.]+)/i
+  /Months\s+of\s+(?:Inventory|Supply)[\s\S]{0,20}?([\d.]+)/i,
+  /Mos\.?\s+Supply[\s\S]{0,20}?([\d.]+)/i
 ], text);
 
 const newListings = firstNum([
-  /\bNew\s+Listings\b[^0-9]*([\d,]+)/i,
-  /\bListings\s+New\b[^0-9]*([\d,]+)/i
+  /\bNew\s+Listings\b[\s\S]{0,40}?([\d,]+)/i,
+  /\bListings\s+New\b[\s\S]{0,40}?([\d,]+)/i
 ], text);
 
 if ([medianPrice, closed, dom, monthsSupply].some(v => v == null)) {
