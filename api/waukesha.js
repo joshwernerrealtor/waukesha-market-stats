@@ -54,19 +54,49 @@ export default async function handler(req, res) {
     const pdfParse = mod.default || mod;
     const { text = "" } = await pdfParse(Buffer.from(ab));
 
-    // 3) Extract metrics (tweak labels if needed)
-    const medianPrice  = toNum(takeNum(text.match(/Median\s+Sale\s+Price\s*\$?([\d,]+)/i)));
-    const closed       = toNum(takeNum(text.match(/\bClosed\s+Sales\s*([\d,]+)/i)));
-    const dom          = toNum(takeNum(text.match(/Days\s+on\s+Market\s*([\d,]+)/i)));
-    const monthsSupply = toNum((text.match(/Months\s+of\s+(?:Inventory|Supply)\s*([\d.]+)/i)?.[1] || "").trim());
-    const newListings  = toNum(takeNum(text.match(/\bNew\s+Listings\s*([\d,]+)/i)));
+   // 3) Extract metrics (expanded patterns for RPR wording)
+function firstNum(patterns, text) {
+  for (const re of patterns) {
+    const m = text.match(re);
+    if (m?.[1]) return toNum(takeNum(m));
+  }
+  return null;
+}
 
-    if ([medianPrice, closed, dom, monthsSupply].some(v => v == null)) {
-      return res.status(422).json({
-        error: "Parser needs tuning: metric(s) not found.",
-        found: { medianPrice, closed, dom, monthsSupply, newListings }
-      });
-    }
+const medianPrice = firstNum([
+  /Median\s+(?:Sale|Sold|Sales)\s+Price[^0-9$]*\$?\s*([\d,]+)/i,
+  /Median\s+Price[^0-9$]*\$?\s*([\d,]+)/i
+], text);
+
+const closed = firstNum([
+  /\bClosed\s+Sales\b[^0-9]*([\d,]+)/i,
+  /\bSales\s+Closed\b[^0-9]*([\d,]+)/i,
+  /\bClosings\b[^0-9]*([\d,]+)/i
+], text);
+
+const dom = firstNum([
+  /\bMedian\s+Days\s+on\s+Market\b[^0-9]*([\d,]+)/i,
+  /\bDays\s+on\s+Market\b[^0-9]*([\d,]+)/i,
+  /\bMedian\s+DOM\b[^0-9]*([\d,]+)/i,
+  /\bDOM\b[^0-9]*([\d,]+)/i
+], text);
+
+const monthsSupply = firstNum([
+  /Months\s+of\s+(?:Inventory|Supply)\s*([\d.]+)/i,
+  /Mos\.?\s+Supply\s*([\d.]+)/i
+], text);
+
+const newListings = firstNum([
+  /\bNew\s+Listings\b[^0-9]*([\d,]+)/i,
+  /\bListings\s+New\b[^0-9]*([\d,]+)/i
+], text);
+
+if ([medianPrice, closed, dom, monthsSupply].some(v => v == null)) {
+  return res.status(422).json({
+    error: "Parser needs tuning: metric(s) not found.",
+    found: { medianPrice, closed, dom, monthsSupply, newListings }
+  });
+}
 
     // 4) Month key + payload
     const monthKey = monthKeyFrom(text);
