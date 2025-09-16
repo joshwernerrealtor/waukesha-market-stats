@@ -1,8 +1,6 @@
 {
   "crons": [
     { "path": "/api/waukesha", "schedule": "0 11 * * *" }
-  ],
-  "functions": {
-    "api/*.js": { "runtime": "nodejs18.x" }
-  }
+  ]
 }
+
