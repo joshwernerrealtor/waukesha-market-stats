@@ -1,5 +1,5 @@
 // api/waukesha.js
-// Minimal, safe parser using a dynamic import for pdf-parse (avoids ESM weirdness)
+// Parses your public RPR PDF and returns JSON. Uses pdf-parse's library file (no debug path).
 
 const RPR_PDF_URL =
   "https://www.narrpr.com/reports-v2/c296fac6-035d-4e9a-84fd-28455ab0339f/pdf";
@@ -49,12 +49,12 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: "Expected PDF, got non-PDF", contentType: ct, sample });
     }
 
-    // 2) Dynamic import of pdf-parse (avoids ESM loader hiccups)
-    const mod = await import("pdf-parse");
-    const pdf = mod.default || mod;
-    const { text = "" } = await pdf(Buffer.from(ab));
+    // 2) Use pdf-parse library file (avoids index.js debug path)
+    const mod = await import("pdf-parse/lib/pdf-parse.js");
+    const pdfParse = mod.default || mod;
+    const { text = "" } = await pdfParse(Buffer.from(ab));
 
-    // 3) Extract metrics
+    // 3) Extract metrics (tweak labels if needed)
     const medianPrice  = toNum(takeNum(text.match(/Median\s+Sale\s+Price\s*\$?([\d,]+)/i)));
     const closed       = toNum(takeNum(text.match(/\bClosed\s+Sales\s*([\d,]+)/i)));
     const dom          = toNum(takeNum(text.match(/Days\s+on\s+Market\s*([\d,]+)/i)));
