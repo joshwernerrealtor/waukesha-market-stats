@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Waukesha County Housing Market Statistics</title>
+  <meta name="description" content="Latest Waukesha County housing market statistics with side-by-side Single-Family and Condo snapshots, plus quick links to community pages." />
+  <style>
+    :root{--brand:#C5A349;--ink:#1f2937;--muted:#6b7280;--bg:#f7f7f9;--card:#fff;--radius:16px;--shadow:0 10px 24px rgba(0,0,0,.08);--shadow-sm:0 3px 10px rgba(0,0,0,.06);--maxw:1100px}
+    html,body{height:100%}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;color:var(--ink);background:var(--bg)}
+    .container{max-width:var(--maxw);margin-inline:auto;padding:24px}
+    .hero{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px}
+    .title{margin:0;font-size:clamp(22px,3vw,34px);font-weight:800}
+    .subtitle{margin:4px 0 0 0;color:var(--muted);font-size:14px}
+    .controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+    .pill{display:flex;gap:10px;padding:8px 12px;border-radius:999px;background:#fff;border:1px solid #e5e7eb;box-shadow:var(--shadow-sm)}
+    .select,.button{border:1px solid #e5e7eb;background:#fff;border-radius:12px;padding:10px 12px;font-size:14px}
+    .button{cursor:pointer}
+    .subnav{display:flex;gap:14px;margin-top:10px;font-size:14px}.subnav a{color:var(--muted)}.subnav a:hover{color:var(--ink)}
+    .grid-2{display:grid;grid-template-columns:1fr;gap:16px;margin-top:16px}@media(min-width:900px){.grid-2{grid-template-columns:1fr 1fr}}
+    .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px}
+    .kpis{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}@media(min-width:720px){.kpis{grid-template-columns:repeat(3,1fr)}}
+    .kpi{border:1px solid #eef0f3;border-radius:14px;padding:12px;background:#fff}
+    .kpi .label{font-size:12px;color:var(--muted);text-transform:uppercase}
+    .kpi .value{font-size:clamp(22px,3vw,28px);font-weight:800;margin-top:6px}
+    .kpi .delta{font-size:12px;margin-top:4px}.up{color:#15803d}.down{color:#b91c1c}
+    .community-card{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border:1px solid #eef0f3;border-radius:12px;background:#fff;box-shadow:var(--shadow-sm)}
+    .community-grid{display:grid;grid-template-columns:1fr;gap:12px}@media(min-width:680px){.community-grid{grid-template-columns:repeat(2,1fr)}}@media(min-width:980px){.community-grid{grid-template-columns:repeat(3,1fr)}}
+    .search{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:#fff;border:1px solid #e5e7eb;box-shadow:var(--shadow-sm)}
+    .search input{border:none;outline:none;flex:1;font-size:14px}
+    a.link{color:var(--ink);text-decoration:none;border-bottom:1px solid #ddd}
+    .foot{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--muted);font-size:12px;margin-top:14px}
+  </style>
+</head>
+<body>
+  <header class="container">
+    <section class="hero">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div>
+          <h1 class="title">Waukesha County Housing Market Statistics</h1>
+          <p class="subtitle">Side by side snapshots for Single-Family and Condos. Updated automatically from RPR.</p>
+        </div>
+        <div class="controls">
+          <span class="pill"><span>Updated</span><strong id="updatedAt">—</strong></span>
+          <label class="pill"><span>Month</span><select id="monthSelect" class="select"></select></label>
+          <button id="printBtn" class="button" type="button">Print / PDF</button>
+        </div>
+      </div>
+      <nav class="subnav" aria-label="Section navigation">
+        <a href="#sf">Single-Family</a>
+        <a href="#condo">Condos</a>
+        <a href="#communities">Communities</a>
+      </nav>
+    </section>
+  </header>
+
+  <main class="container">
+    <section class="grid-2">
+      <article id="sf" class="card" aria-labelledby="sfTitle">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <h2 id="sfTitle" style="margin:0;font-size:20px">Single-Family Homes</h2>
+          <span class="badge" id="sfMonth">—</span>
+        </div>
+        <div class="kpis" id="sfKpis"></div>
+        <div class="foot">
+          <span id="sfNote"></span>
+          <a id="sfReport" class="link" href="https://www.narrpr.com/reports-v2/c296fac6-035d-4e9a-84fd-28455ab0339f/pdf" target="_blank" rel="noopener">Full county report</a>
+        </div>
+      </article>
+
+      <article id="condo" class="card" aria-labelledby="condoTitle">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <h2 id="condoTitle" style="margin:0;font-size:20px">Condos / Townhomes</h2>
+          <span class="badge" id="condoMonth">—</span>
+        </div>
+        <div class="kpis" id="condoKpis"></div>
+        <div class="foot">
+          <span id="condoNote"></span>
+          <a id="condoReport" class="link" href="https://www.narrpr.com/reports-v2/c296fac6-035d-4e9a-84fd-28455ab0339f/pdf" target="_blank" rel="noopener">Full county report</a>
+        </div>
+      </article>
+    </section>
+
+    <section id="communities" class="card" style="margin-top:16px">
+      <div style="display:flex;align-items:end;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div>
+          <h3 style="margin:0;font-size:18px">Top 10 Communities</h3>
+          <p class="subtitle" style="margin:6px 0 0 0">These RPR® reports update automatically every ~48 hours. Click a community to view the live PDF.</p>
+        </div>
+        <div class="search" role="search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="11" cy="11" r="7" stroke="#9ca3af" stroke-width="2"/><path d="M20 20l-3.2-3.2" stroke="#9ca3af" stroke-width="2" stroke-linecap="round"/></svg>
+          <input id="searchInput" type="search" placeholder="Search communities…" aria-label="Search communities" />
+        </div>
+      </div>
+      <div id="communityGrid" class="community-grid" style="margin-top:12px"></div>
+    </section>
+  </main>
+
+  <footer class="container" style="opacity:.9;padding-top:0">
+    <p style="font-size:12px;color:var(--muted)">Source: Realtors Property Resource® (RPR). County stats auto-refresh from the county PDF via a secure API.</p>
+  </footer>
+
+  <script>
+    const ENDPOINT = "/api/waukesha";
+
+    const COMMUNITIES = [
+      { name: "Brookfield",        url: "https://www.narrpr.com/reports-v2/97a381b7-10f7-40e6-9e36-852d9a194cdf/pdf" },
+      { name: "Menomonee Falls",   url: "https://www.narrpr.com/reports-v2/e88b179b-2c39-4b51-9968-f4d8b6df89cb/pdf" },
+      { name: "New Berlin",        url: "https://www.narrpr.com/reports-v2/0eedbe20-e01d-4e10-8791-79e0e18f6853/pdf" },
+      { name: "Muskego",           url: "https://www.narrpr.com/reports-v2/adda4cc2-f31f-4549-a499-793c061484b8/pdf" },
+      { name: "Pewaukee",          url: "https://www.narrpr.com/reports-v2/d62c13ba-f21d-44d4-b4f1-cb89d62cfd1d/pdf" },
+      { name: "Oconomowoc",        url: "https://www.narrpr.com/reports-v2/2635ef10-f399-4498-987f-34784fca249a/pdf" },
+      { name: "Hartland",          url: "https://www.narrpr.com/reports-v2/579c97c4-b4d9-4eb4-980e-890348286b9b/pdf" },
+      { name: "Delafield",         url: "https://www.narrpr.com/reports-v2/cfaf9afb-4e22-44b9-b114-0d64b1be0639/pdf" },
+      { name: "Mukwonago",         url: "https://www.narrpr.com/reports-v2/17d2ea0c-a2d7-4dce-954c-e2140ac59f88/pdf" },
+      { name: "Sussex",            url: "https://www.narrpr.com/reports-v2/41f387a4-b092-42c4-b23a-b3575ae52116/pdf" }
+    ];
+
+    const $=(q,el=document)=>el.querySelector(q);
+    const updatedAtEl=$("#updatedAt"), monthSelect=$("#monthSelect");
+    const sfMonthEl=$("#sfMonth"), condoMonthEl=$("#condoMonth");
+    const sfKpis=$("#sfKpis"), condoKpis=$("#condoKpis");
+    const sfReport=$("#sfReport"), condoReport=$("#condoReport");
+    const searchInput=$("#searchInput"), communityGrid=$("#communityGrid");
+
+    const fCurrency=v=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0}).format(v);
+    const fNumber=v=>new Intl.NumberFormat("en-US").format(v);
+    const fNumber1=v=>new Intl.NumberFormat("en-US",{maximumFractionDigits:1}).format(v);
+    const delta=(cur,prev)=>{ if(prev==null) return {dir:null,pct:0}; const diff=cur-prev; const dir=diff===0?0:(diff>0?1:-1); return {dir,pct: prev===0?0:(diff/prev)*100}; };
+
+    function kpiEl(label,value,prev,type){
+      const el=document.createElement("div"); el.className="kpi";
+      const {dir,pct}=delta(value,prev); const arrow=dir===0?"—":dir>0?"▲":"▼"; const cls=dir===0?"":dir>0?"up":"down";
+      const formatted = type==="currency" ? fCurrency(value) : type==="number1" ? fNumber1(value) : fNumber(value);
+      el.innerHTML = `
+        <div class="label">${label}</div>
+        <div class="value">${formatted}</div>
+        <div class="delta ${cls}">${prev==null?'<span style="color:#9ca3af">n/a</span>': `${arrow} ${Math.abs(pct).toFixed(1)}% MoM`}</div>`;
+      return el;
+    }
+
+    function renderCommunities(items){
+      communityGrid.innerHTML="";
+      items.slice().sort((a,b)=>a.name.localeCompare(b.name)).forEach(c=>{
+        const a=document.createElement("a");
+        a.className="community-card"; a.href=c.url; a.target="_blank"; a.rel="noopener";
+        a.innerHTML=`<span>${c.name}</span><span style="color:var(--brand)">→</span>`;
+        communityGrid.appendChild(a);
+      });
+    }
+
+    function paintMonth(key, dataObj){
+      const months=Object.keys(dataObj.months).sort();
+      const idx=months.indexOf(key); const cur=dataObj.months[key]; const prev=dataObj.months[months[idx-1]];
+      const [y,m]=key.split("-"); const label=new Date(+y, +m-1, 1).toLocaleDateString(undefined,{month:"long",year:"numeric"});
+      sfMonthEl.textContent=label; condoMonthEl.textContent=label;
+      sfKpis.innerHTML=""; condoKpis.innerHTML="";
+
+      const METRICS=[
+        {key:"medianPrice",label:"Median Price",type:"currency"},
+        {key:"closed",label:"Closed Sales",type:"number"},
+        {key:"dom",label:"Days on Market",type:"number"},
+        {key:"monthsSupply",label:"Months Supply",type:"number1"},
+        {key:"newListings",label:"New Listings",type:"number"}
+      ];
+
+      METRICS.forEach(m=>{
+        sfKpis.appendChild(kpiEl(m.label, cur.sf?.[m.key],    prev?.sf?.[m.key],    m.type));
+        condoKpis.appendChild(kpiEl(m.label, cur.condo?.[m.key], prev?.condo?.[m.key], m.type));
+      });
+    }
+
+    function render(payload){
+      updatedAtEl.textContent = new Date(payload.updatedAt).toLocaleDateString();
+      const months=Object.keys(payload.months).sort().reverse();
+      monthSelect.innerHTML="";
+      months.forEach(k=>{
+        const [y,m]=k.split("-"); const dt=new Date(+y,+m-1,1);
+        const opt=document.createElement("option"); opt.value=k; opt.textContent=dt.toLocaleDateString(undefined,{month:"long",year:"numeric"});
+        monthSelect.appendChild(opt);
+      });
+      monthSelect.value=months[0];
+      paintMonth(months[0], payload);
+      monthSelect.onchange=e=>paintMonth(e.target.value, payload);
+      $("#printBtn").onclick=()=>window.print();
+
+      renderCommunities(COMMUNITIES);
+      searchInput.addEventListener("input", ()=>{
+        const q=searchInput.value.trim().toLowerCase();
+        renderCommunities(COMMUNITIES.filter(c=>c.name.toLowerCase().includes(q)));
+      });
+    }
+
+    async function boot(){
+      try{
+        const r=await fetch(ENDPOINT, { cache: "no-store" });
+        if(!r.ok) throw new Error("Bad response");
+        const json=await r.json(); // { updatedAt, months }
+        render(json);
+      }catch(e){
+        console.error("Could not load live county stats:", e);
+      }
+    }
+    document.addEventListener("DOMContentLoaded", boot);
+  </script>
+</body>
+</html>
