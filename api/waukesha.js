@@ -61,59 +61,69 @@ export default async function handler(req, res) {
       });
     }
 
-    // 3) Extract metrics (current best patterns)
-    function firstNum(patterns) {
-      for (const re of patterns) {
-        const m = text.match(re);
-        if (m?.[1]) {
-          const raw = (m[1] || "").toString().replace(/[,$\s]/g, "");
-          if (raw !== "" && !Number.isNaN(Number(raw))) return Number(raw);
-        }
-      }
-      return null;
-    }
+    // 3) Extract metrics — tuned to your PDF wording (e.g., "Median Days in RPR")
+function firstIntAround(labelRegexSource, text, span = 120) {
+  const labelRe = new RegExp(labelRegexSource, "i");
 
-    const medianPrice = firstNum([
-      /Median\s+(?:Sale|Sold|Sales)\s+Price[\s\S]{0,60}?\$?\s*([\d,]+)/i,
-      /Median\s+Price[\s\S]{0,60}?\$?\s*([\d,]+)/i
-    ]);
+  // a) Label → number within window after it
+  const a = labelRe.exec(text);
+  if (a) {
+    const start = Math.max(0, a.index);
+    const end = Math.min(text.length, a.index + a[0].length + span);
+    const window = text.slice(start, end);
+    const m = window.match(/(\d{1,3}(?:,\d{3})+|\d{1,4})(?!\.\d)/);
+    if (m?.[1]) return Number(m[1].replace(/,/g, ""));
+  }
 
-    const closed = firstNum([
-      /\bClosed\s+Sales\b[\s\S]{0,80}?([\d,]+)/i,
-      /\bSales\s+Closed\b[\s\S]{0,80}?([\d,]+)/i,
-      /\bClosings\b[\s\S]{0,80}?([\d,]+)/i,
-      /\bClosed\s+Transactions\b[\s\S]{0,80}?([\d,]+)/i
-    ]);
+  // b) Number → label appears shortly after
+  const b = new RegExp(
+    `(\\d{1,3}(?:,\\d{3})+|\\d{1,4})(?!\\.\\d)[\\s\\S]{0,${span}}${labelRegexSource}`,
+    "i"
+  ).exec(text);
+  if (b?.[1]) return Number(b[1].replace(/,/g, ""));
 
-    let dom = firstNum([
-      /\bMedian\s+Days\s+on\s+Market\b[\s\S]{0,80}?([\d,]+)/i,
-      /\bDays\s+on\s+Market\b[\s\S]{0,80}?([\d,]+)/i,
-      /\bMedian\s+DOM\b[\s\S]{0,40}?([\d,]+)/i,
-      /\bDOM\b[\s\S]{0,20}?([\d,]+)/i,
-      /\bMedian\s+Days\s+to\s+(?:Close|Pending)\b[\s\S]{0,80}?([\d,]+)/i
-    ]);
-    if (dom == null) {
-      const m = text.match(/\bDays\s+on\s+Market\b[\s\S]{0,120}?([0-9]{1,3})\s*days?/i);
-      if (m?.[1]) dom = Number(m[1]);
-    }
+  return null;
+}
 
-    const monthsSupply = firstNum([
-      /Months\s+of\s+(?:Inventory|Supply)[\s\S]{0,40}?([\d.]+)/i,
-      /Mos\.?\s+Supply[\s\S]{0,40}?([\d.]+)/i
-    ]);
+// Median Sold Price (works already from your debug)
+const medianPrice =
+  (text.match(/Median\s+(?:Sold|Sale|Sales)\s+Price[\s\S]{0,60}?\$?\s*([\d,]+)/i)?.[1] ??
+   text.match(/Median\s+Price[\s\S]{0,60}?\$?\s*([\d,]+)/i)?.[1]) ?
+  Number((RegExp.$1 || RegExp.$2).replace(/,/g, "")) :
+  firstIntAround("(Median\\s+(?:Sold|Sale|Sales)\\s+Price|Median\\s+Price)", text);
 
-    const newListings = firstNum([
-      /\bNew\s+Listings\b[\s\S]{0,80}?([\d,]+)/i,
-      /\bListings\s+New\b[\s\S]{0,80}?([\d,]+)/i,
-      /\bNew\s+Listings\s+Count\b[\s\S]{0,80}?([\d,]+)/i
-    ]);
+// Months of Inventory (your debug shows 1.58)
+const monthsSupply = (() => {
+  const m =
+    text.match(/Months\s+of\s+(?:Inventory|Supply)[\s\S]{0,40}?([\d.]+)/i) ||
+    text.match(/Mos\.?\s+Supply[\s\S]{0,40}?([\d.]+)/i);
+  return m?.[1] ? Number(m[1]) : null;
+})();
 
-    if ([medianPrice, closed, dom, monthsSupply].some(v => v == null)) {
-      return res.status(422).json({
-        error: "Parser needs tuning: metric(s) not found.",
-        found: { medianPrice, closed, dom, monthsSupply, newListings }
-      });
-    }
+// DOM — your PDF says "Median Days in RPR"
+let dom = firstIntAround(
+  "(Median\\s+Days\\s+in\\s+RPR|Median\\s+Days\\s+on\\s+Market|Days\\s+on\\s+Market|Median\\s+DOM|\\bDOM\\b)",
+  text
+);
+
+// Closed Sales — cast a wider net
+const closed = firstIntAround(
+  "(Closed\\s+Sales|Sales\\s+Closed|Closings|Closed\\s+Transactions|Properties\\s+Sold|Sold\\s+Properties)",
+  text
+);
+
+// New Listings — common variants
+const newListings = firstIntAround(
+  "(New\\s+Listings|Listings\\s+New|Newly\\s+Listed|New\\s+Listings\\s+Count)",
+  text
+);
+
+if ([medianPrice, closed, dom, monthsSupply].some(v => v == null)) {
+  return res.status(422).json({
+    error: "Parser needs tuning: metric(s) not found.",
+    found: { medianPrice, closed, dom, monthsSupply, newListings }
+  });
+}
 
     // 4) Month key + payload
     const monthKey = monthKeyFrom(text);
