@@ -3,6 +3,6 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "pdfjs-dist": "^4.4.168"
+    "pdf-parse": "^1.1.1"
   }
 }
