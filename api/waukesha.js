@@ -54,57 +54,71 @@ export default async function handler(req, res) {
     const pdfParse = mod.default || mod;
     const { text = "" } = await pdfParse(Buffer.from(ab));
 
-   // 3) Extract metrics (wider patterns tolerate line breaks / extra words)
-function firstNum(patterns, text) {
-  for (const re of patterns) {
-    const m = text.match(re);
-    if (m?.[1]) {
-      const raw = (m[1] || "").toString().replace(/[,$\s]/g, "");
-      if (raw !== "" && !Number.isNaN(Number(raw))) return Number(raw);
-    }
+   // 3) Extract metrics — find the number near each label (forward or backward)
+function numNear(labelRegexSource, text, span = 120) {
+  const labelRe = new RegExp(labelRegexSource, "i");
+
+  // a) Label, then number within window
+  const a = labelRe.exec(text);
+  if (a) {
+    const start = Math.max(0, a.index);
+    const end = Math.min(text.length, a.index + a[0].length + span);
+    const window = text.slice(start, end);
+    const m = window.match(/(\d{1,3}(?:,\d{3})+|\d{1,4})(?:\.\d+)?/);
+    if (m?.[1]) return Number(m[1].replace(/,/g, ""));
   }
+
+  // b) Number, then label within window
+  const b = new RegExp(
+    `(\\d{1,3}(?:,\\d{3})+|\\d{1,4})(?:\\.\\d+)?[\\s\\S]{0,${span}}${labelRegexSource}`,
+    "i"
+  ).exec(text);
+  if (b?.[1]) return Number(b[1].replace(/,/g, ""));
+
   return null;
 }
 
-const medianPrice = firstNum([
-  /Median\s+(?:Sale|Sold|Sales)\s+Price[\s\S]{0,40}?\$?\s*([\d,]+)/i,
-  /Median\s+Price[\s\S]{0,40}?\$?\s*([\d,]+)/i
-], text);
+// Median price (keep the stricter version since it already works for you)
+const medianPrice = (()=>{
+  const m =
+    text.match(/Median\s+(?:Sale|Sold|Sales)\s+Price[\s\S]{0,60}?\$?\s*([\d,]+)/i) ||
+    text.match(/Median\s+Price[\s\S]{0,60}?\$?\s*([\d,]+)/i);
+  return m?.[1] ? Number(m[1].replace(/,/g, "")) : null;
+})();
 
-const closed = firstNum([
-  /\bClosed\s+Sales\b[\s\S]{0,40}?([\d,]+)/i,
-  /\bSales\s+Closed\b[\s\S]{0,40}?([\d,]+)/i,
-  /\bClosings\b[\s\S]{0,40}?([\d,]+)/i
-], text);
+// Closed sales
+const closed = numNear(
+  "(Closed\\s+Sales|Sales\\s+Closed|Closings|Closed\\s+Transactions)",
+  text
+);
 
-// DOM: try multiple phrasings; also catch "… 23 days"
-let dom = firstNum([
-  /\bMedian\s+Days\s+on\s+Market\b[\s\S]{0,40}?([\d,]+)/i,
-  /\bDays\s+on\s+Market\b[\s\S]{0,40}?([\d,]+)/i,
-  /\bMedian\s+DOM\b[\s\S]{0,20}?([\d,]+)/i,
-  /\bDOM\b[\s\S]{0,10}?([\d,]+)/i
-], text);
+// Days on Market (DOM) — try multiple phrasings
+let dom =
+  numNear("(Median\\s+Days\\s+on\\s+Market|Days\\s+on\\s+Market|Median\\s+DOM|\\bDOM\\b|Median\\s+Days\\s+to\\s+(?:Close|Pending))", text);
 if (dom == null) {
-  const m = text.match(/\bDays\s+on\s+Market\b[\s\S]{0,40}?([0-9]{1,3})\s*days?/i);
+  const m = text.match(/\bDays\s+on\s+Market\b[\s\S]{0,80}?([0-9]{1,3})\s*days?/i);
   if (m?.[1]) dom = Number(m[1]);
 }
 
-const monthsSupply = firstNum([
-  /Months\s+of\s+(?:Inventory|Supply)[\s\S]{0,20}?([\d.]+)/i,
-  /Mos\.?\s+Supply[\s\S]{0,20}?([\d.]+)/i
-], text);
+// Months supply (you already had this one working as a decimal)
+const monthsSupply = (()=>{
+  const m =
+    text.match(/Months\s+of\s+(?:Inventory|Supply)[\s\S]{0,40}?([\d.]+)/i) ||
+    text.match(/Mos\.?\s+Supply[\s\S]{0,40}?([\d.]+)/i);
+  return m?.[1] ? Number(m[1]) : null;
+})();
 
-const newListings = firstNum([
-  /\bNew\s+Listings\b[\s\S]{0,40}?([\d,]+)/i,
-  /\bListings\s+New\b[\s\S]{0,40}?([\d,]+)/i
-], text);
+// New listings
+const newListings = numNear("(New\\s+Listings|Listings\\s+New)", text);
 
+// Bail out if any core metric missing
 if ([medianPrice, closed, dom, monthsSupply].some(v => v == null)) {
   return res.status(422).json({
     error: "Parser needs tuning: metric(s) not found.",
     found: { medianPrice, closed, dom, monthsSupply, newListings }
   });
 }
+
 
     // 4) Month key + payload
     const monthKey = monthKeyFrom(text);
