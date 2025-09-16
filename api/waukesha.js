@@ -61,23 +61,23 @@ export default async function handler(req, res) {
       });
     }
 
-    // 3) Extract metrics — tuned to your PDF wording (e.g., "Median Days in RPR")
-function firstIntAround(labelRegexSource, text, span = 120) {
+    // 3) Extract metrics — expanded patterns + avoid grabbing percentages
+function numNear(labelRegexSource, text, span = 200) {
   const labelRe = new RegExp(labelRegexSource, "i");
 
-  // a) Label → number within window after it
+  // a) Label → number shortly after
   const a = labelRe.exec(text);
   if (a) {
     const start = Math.max(0, a.index);
     const end = Math.min(text.length, a.index + a[0].length + span);
     const window = text.slice(start, end);
-    const m = window.match(/(\d{1,3}(?:,\d{3})+|\d{1,4})(?!\.\d)/);
+    const m = window.match(/(\d{1,3}(?:,\d{3})+|\d{1,4})(?:\.\d+)?(?!\s*%)/);
     if (m?.[1]) return Number(m[1].replace(/,/g, ""));
   }
 
-  // b) Number → label appears shortly after
+  // b) Number → label shortly after
   const b = new RegExp(
-    `(\\d{1,3}(?:,\\d{3})+|\\d{1,4})(?!\\.\\d)[\\s\\S]{0,${span}}${labelRegexSource}`,
+    `(\\d{1,3}(?:,\\d{3})+|\\d{1,4})(?:\\.\\d+)?(?!\\s*%)[\\s\\S]{0,${span}}${labelRegexSource}`,
     "i"
   ).exec(text);
   if (b?.[1]) return Number(b[1].replace(/,/g, ""));
@@ -85,36 +85,41 @@ function firstIntAround(labelRegexSource, text, span = 120) {
   return null;
 }
 
-// Median Sold Price (works already from your debug)
-const medianPrice =
-  (text.match(/Median\s+(?:Sold|Sale|Sales)\s+Price[\s\S]{0,60}?\$?\s*([\d,]+)/i)?.[1] ??
-   text.match(/Median\s+Price[\s\S]{0,60}?\$?\s*([\d,]+)/i)?.[1]) ?
-  Number((RegExp.$1 || RegExp.$2).replace(/,/g, "")) :
-  firstIntAround("(Median\\s+(?:Sold|Sale|Sales)\\s+Price|Median\\s+Price)", text);
-
-// Months of Inventory (your debug shows 1.58)
-const monthsSupply = (() => {
+// Median Sold Price (already working for you)
+const medianPrice = (()=>{
   const m =
-    text.match(/Months\s+of\s+(?:Inventory|Supply)[\s\S]{0,40}?([\d.]+)/i) ||
-    text.match(/Mos\.?\s+Supply[\s\S]{0,40}?([\d.]+)/i);
+    text.match(/Median\s+(?:Sold|Sale|Sales)\s+Price[\s\S]{0,80}?\$?\s*([\d,]+)/i) ||
+    text.match(/Median\s+Price[\s\S]{0,80}?\$?\s*([\d,]+)/i);
+  return m?.[1] ? Number(m[1].replace(/,/g, "")) : null;
+})();
+
+// Months of Inventory (decimal)
+const monthsSupply = (()=>{
+  const m =
+    text.match(/Months\s+of\s+(?:Inventory|Supply)[\s\S]{0,60}?([\d.]+)/i) ||
+    text.match(/Mos\.?\s+Supply[\s\S]{0,60}?([\d.]+)/i);
   return m?.[1] ? Number(m[1]) : null;
 })();
 
-// DOM — your PDF says "Median Days in RPR"
-let dom = firstIntAround(
-  "(Median\\s+Days\\s+in\\s+RPR|Median\\s+Days\\s+on\\s+Market|Days\\s+on\\s+Market|Median\\s+DOM|\\bDOM\\b)",
+// DOM — your PDF shows "Median Days in RPR"
+let dom = numNear(
+  "(Median\\s+Days\\s+in\\s+RPR|Median\\s+Days\\s+on\\s+Market|Days\\s+on\\s+Market|Median\\s+DOM|\\bDOM\\b|Median\\s+Days\\s+to\\s+(?:Close|Pending))",
   text
 );
+if (dom == null) {
+  const m = text.match(/\bDays\s+on\s+Market\b[\s\S]{0,120}?([0-9]{1,3})\s*days?/i);
+  if (m?.[1]) dom = Number(m[1]);
+}
 
-// Closed Sales — cast a wider net
-const closed = firstIntAround(
-  "(Closed\\s+Sales|Sales\\s+Closed|Closings|Closed\\s+Transactions|Properties\\s+Sold|Sold\\s+Properties)",
+// Closed Sales — lots of variants
+const closed = numNear(
+  "(Closed\\s+Sales|Sales\\s+Closed|Closings|Closed\\s+Transactions|Closed\\s+Listings|Properties\\s+Sold|Sold\\s+Properties|Total\\s+Closed)",
   text
 );
 
 // New Listings — common variants
-const newListings = firstIntAround(
-  "(New\\s+Listings|Listings\\s+New|Newly\\s+Listed|New\\s+Listings\\s+Count)",
+const newListings = numNear(
+  "(New\\s+Listings|Listings\\s+New|Newly\\s+Listed|New\\s+Listings\\s+Count|Listings\\s+Added|Added\\s+Listings)",
   text
 );
 
