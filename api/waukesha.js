@@ -61,21 +61,24 @@ export default async function handler(req, res) {
       });
     }
 
-    // 3) Extract metrics — expanded patterns + avoid grabbing percentages
-function numNear(labelRegexSource, text, span = 200) {
-  const labelRe = new RegExp(labelRegexSource, "i");
+    // 3) Extract metrics — widen search + handle "# of Properties - N" sections
 
-  // a) Label → number shortly after
-  const a = labelRe.exec(text);
+function findIntNear(labelRegexSource, text, span = 800) {
+  const label = new RegExp(labelRegexSource, "i");
+
+  // a) After the label: look for plain numbers (avoid percentages)
+  const a = label.exec(text);
   if (a) {
-    const start = Math.max(0, a.index);
-    const end = Math.min(text.length, a.index + a[0].length + span);
-    const window = text.slice(start, end);
-    const m = window.match(/(\d{1,3}(?:,\d{3})+|\d{1,4})(?:\.\d+)?(?!\s*%)/);
+    const window = text.slice(a.index, Math.min(text.length, a.index + a[0].length + span));
+    // First try the "# of Properties - N" pattern
+    let m = window.match(/#\s*of\s*Properties\s*[-–—]\s*([\d,]+)/i);
+    if (m?.[1]) return Number(m[1].replace(/,/g, ""));
+    // Fallback to any number (not followed by %)
+    m = window.match(/(\d{1,3}(?:,\d{3})+|\d{1,4})(?:\.\d+)?(?!\s*%)/);
     if (m?.[1]) return Number(m[1].replace(/,/g, ""));
   }
 
-  // b) Number → label shortly after
+  // b) Number appears first, then the label
   const b = new RegExp(
     `(\\d{1,3}(?:,\\d{3})+|\\d{1,4})(?:\\.\\d+)?(?!\\s*%)[\\s\\S]{0,${span}}${labelRegexSource}`,
     "i"
@@ -85,40 +88,40 @@ function numNear(labelRegexSource, text, span = 200) {
   return null;
 }
 
-// Median Sold Price (already working for you)
-const medianPrice = (()=>{
+// Median Sold Price (already working)
+const medianPrice = (() => {
   const m =
-    text.match(/Median\s+(?:Sold|Sale|Sales)\s+Price[\s\S]{0,80}?\$?\s*([\d,]+)/i) ||
-    text.match(/Median\s+Price[\s\S]{0,80}?\$?\s*([\d,]+)/i);
+    text.match(/Median\s+(?:Sold|Sale|Sales)\s+Price[\s\S]{0,120}?\$?\s*([\d,]+)/i) ||
+    text.match(/Median\s+Price[\s\S]{0,120}?\$?\s*([\d,]+)/i);
   return m?.[1] ? Number(m[1].replace(/,/g, "")) : null;
 })();
 
 // Months of Inventory (decimal)
-const monthsSupply = (()=>{
+const monthsSupply = (() => {
   const m =
-    text.match(/Months\s+of\s+(?:Inventory|Supply)[\s\S]{0,60}?([\d.]+)/i) ||
-    text.match(/Mos\.?\s+Supply[\s\S]{0,60}?([\d.]+)/i);
+    text.match(/Months\s+of\s+(?:Inventory|Supply)[\s\S]{0,120}?([\d.]+)/i) ||
+    text.match(/Mos\.?\s+Supply[\s\S]{0,120}?([\d.]+)/i);
   return m?.[1] ? Number(m[1]) : null;
 })();
 
 // DOM — your PDF shows "Median Days in RPR"
-let dom = numNear(
+let dom = findIntNear(
   "(Median\\s+Days\\s+in\\s+RPR|Median\\s+Days\\s+on\\s+Market|Days\\s+on\\s+Market|Median\\s+DOM|\\bDOM\\b|Median\\s+Days\\s+to\\s+(?:Close|Pending))",
   text
 );
 if (dom == null) {
-  const m = text.match(/\bDays\s+on\s+Market\b[\s\S]{0,120}?([0-9]{1,3})\s*days?/i);
+  const m = text.match(/\bDays\s+on\s+Market\b[\s\S]{0,200}?([0-9]{1,3})\s*days?/i);
   if (m?.[1]) dom = Number(m[1]);
 }
 
-// Closed Sales — lots of variants
-const closed = numNear(
-  "(Closed\\s+Sales|Sales\\s+Closed|Closings|Closed\\s+Transactions|Closed\\s+Listings|Properties\\s+Sold|Sold\\s+Properties|Total\\s+Closed)",
+// Closed Sales — often shown with "# of Properties - N" near the "Closed" section
+const closed = findIntNear(
+  "(Closed\\s+(?:Sales|Listings)|Closings|Closed\\s+Transactions|Properties\\s+Sold|Sold\\s+Properties|Total\\s+Closed)",
   text
 );
 
-// New Listings — common variants
-const newListings = numNear(
+// New Listings — same trick
+const newListings = findIntNear(
   "(New\\s+Listings|Listings\\s+New|Newly\\s+Listed|New\\s+Listings\\s+Count|Listings\\s+Added|Added\\s+Listings)",
   text
 );
