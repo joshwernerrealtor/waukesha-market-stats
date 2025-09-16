@@ -152,6 +152,12 @@ const closed = findIntNear(
   text
 );
 
+// Active Listings — pull "# of Properties - N" from the Active section
+const activeListings = (() => {
+  const m = text.match(/Active\s+Listings[\s\S]{0,2000}?#\s*of\s*Properties\s*[-–—]\s*([\d,]+)/i);
+  return m?.[1] ? Number(m[1].replace(/,/g, "")) : null;
+})();
+
 // New Listings — look up to ~2000 chars after the "New Listings" section for "# of Properties - N"
 let newListings = null;
 const nlWide = text.match(/New\s+Listings[\s\S]{0,2000}?#\s*of\s*Properties\s*[-–—]\s*([\d,]+)/i);
@@ -176,16 +182,17 @@ if ([medianPrice, closed, dom, monthsSupply].some(v => v == null)) {
     // 4) Month key + payload
     const monthKey = monthKeyFrom(text);
     const payload = {
-      updatedAt: new Date().toISOString().slice(0, 10),
-      months: {
-        [monthKey]: {
-          sf:    { medianPrice, closed, dom, monthsSupply, newListings },
-          condo: { medianPrice, closed, dom, monthsSupply, newListings },
-          sfReport: RPR_PDF_URL,
-          condoReport: RPR_PDF_URL
-        }
-      }
-    };
+  updatedAt: new Date().toISOString().slice(0, 10),
+  months: {
+    [monthKey]: {
+      sf:    { medianPrice, closed, dom, monthsSupply, newListings, activeListings },
+      condo: { medianPrice, closed, dom, monthsSupply, newListings, activeListings },
+      sfReport: RPR_PDF_URL,
+      condoReport: RPR_PDF_URL
+    }
+  }
+};
+
 
     res.setHeader("Cache-Control", "s-maxage=82800, stale-while-revalidate=3600");
     res.status(200).json(payload);
