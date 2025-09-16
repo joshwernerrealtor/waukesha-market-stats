@@ -128,26 +128,36 @@
     const fNumber1=v=>new Intl.NumberFormat("en-US",{maximumFractionDigits:1}).format(v);
     const delta=(cur,prev)=>{ if(prev==null) return {dir:null,pct:0}; const diff=cur-prev; const dir=diff===0?0:(diff>0?1:-1); return {dir,pct: prev===0?0:(diff/prev)*100}; };
 
-    function kpiEl(label,value,prev,type){
-      const el=document.createElement("div"); el.className="kpi";
-      const {dir,pct}=delta(value,prev); const arrow=dir===0?"—":dir>0?"▲":"▼"; const cls=dir===0?"":dir>0?"up":"down";
-      const formatted = type==="currency" ? fCurrency(value) : type==="number1" ? fNumber1(value) : fNumber(value);
-      el.innerHTML = `
-        <div class="label">${label}</div>
-        <div class="value">${formatted}</div>
-        <div class="delta ${cls}">${prev==null?'<span style="color:#9ca3af">n/a</span>': `${arrow} ${Math.abs(pct).toFixed(1)}% MoM`}</div>`;
-      return el;
-    }
+    function kpiEl(label, value, prev, type){
+  const el = document.createElement("div");
+  el.className = "kpi";
 
-    function renderCommunities(items){
-      communityGrid.innerHTML="";
-      items.slice().sort((a,b)=>a.name.localeCompare(b.name)).forEach(c=>{
-        const a=document.createElement("a");
-        a.className="community-card"; a.href=c.url; a.target="_blank"; a.rel="noopener";
-        a.innerHTML=`<span>${c.name}</span><span style="color:var(--brand)">→</span>`;
-        communityGrid.appendChild(a);
-      });
-    }
+  let dir = null, pct = 0, formatted = "—";
+
+  // Only format & compute deltas when we have a real number
+  if (typeof value === "number" && !Number.isNaN(value)) {
+    const d = delta(value, prev);
+    dir = d.dir; pct = d.pct;
+    formatted = type === "currency"
+      ? fCurrency(value)
+      : type === "number1"
+        ? fNumber1(value)
+        : fNumber(value);
+  }
+
+  const arrow = dir == null ? "" : dir === 0 ? "—" : (dir > 0 ? "▲" : "▼");
+  const cls   = dir == null ? "" : dir === 0 ? ""  : (dir > 0 ? "up" : "down");
+  const deltaHtml = dir == null
+    ? '<span style="color:#9ca3af">n/a</span>'
+    : `${arrow} ${Math.abs(pct).toFixed(1)}% MoM`;
+
+  el.innerHTML = `
+    <div class="label">${label}</div>
+    <div class="value">${formatted}</div>
+    <div class="delta ${cls}">${deltaHtml}</div>
+  `;
+  return el;
+}
 
     function paintMonth(key, dataObj){
       const months=Object.keys(dataObj.months).sort();
