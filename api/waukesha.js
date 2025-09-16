@@ -1,5 +1,6 @@
 // api/waukesha.js
 // Fetches your public RPR PDF, parses key stats, supports ?debug=1 and ?debug=new
+export const config = { runtime: 'nodejs20.x' };
 
 const RPR_PDF_URL =
   "https://www.narrpr.com/reports-v2/c296fac6-035d-4e9a-84fd-28455ab0339f/pdf";
