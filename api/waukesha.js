@@ -1,20 +1,17 @@
 // api/waukesha.js
-import pdf from "pdf-parse";
+// Minimal, safe parser using a dynamic import for pdf-parse (avoids ESM weirdness)
 
-// Public county dynamic PDF:
 const RPR_PDF_URL =
   "https://www.narrpr.com/reports-v2/c296fac6-035d-4e9a-84fd-28455ab0339f/pdf";
 
-// -------- helpers --------
+// Helpers
 const takeNum = (m) => (m?.[1] || "").replace(/[,$\s]/g, "");
 const toNum = (v) => (v === "" ? null : Number(v));
-
 function monthKeyFrom(text) {
   const label =
     text.match(/Market\s+Trends.*?for\s+([A-Za-z]+\s+\d{4})/is)?.[1] ||
     text.match(/Updated\s+through\s+([A-Za-z]+\s+\d{4})/i)?.[1] ||
     null;
-
   if (label) {
     const dt = new Date(`${label} 1`);
     if (!Number.isNaN(dt.getTime())) {
@@ -27,9 +24,7 @@ function monthKeyFrom(text) {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
-// -------- handler --------
 export default async function handler(req, res) {
-  // CORS (safe even if same domain)
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   if (req.method === "OPTIONS") return res.status(200).end();
@@ -44,49 +39,52 @@ export default async function handler(req, res) {
         "Referer": "https://www.narrpr.com/"
       }
     });
+    if (!resp.ok) return res.status(502).json({ error: `Upstream ${resp.status} ${resp.statusText}` });
 
     const ct = resp.headers.get("content-type") || "";
-    if (!resp.ok) {
-      return res.status(502).json({ error: `Upstream ${resp.status} ${resp.statusText}` });
-    }
     const ab = await resp.arrayBuffer();
     if (!ct.includes("application/pdf")) {
-      // Not a PDF — likely a viewer/login page. Return a helpful 502 with a small sample.
       let sample = "";
       try { sample = Buffer.from(ab).toString("utf8").slice(0, 200); } catch {}
-      return res.status(502).json({
-        error: "Expected a PDF but got non-PDF content.",
-        contentType: ct,
-        sample
-      });
+      return res.status(502).json({ error: "Expected PDF, got non-PDF", contentType: ct, sample });
     }
 
-    // 2) Parse PDF text
-    const buf = Buffer.from(ab);
-    const { text = "" } = await pdf(buf);
+    // 2) Dynamic import of pdf-parse (avoids ESM loader hiccups)
+    const mod = await import("pdf-parse");
+    const pdf = mod.default || mod;
+    const { text = "" } = await pdf(Buffer.from(ab));
 
-    // 3) Extract metrics (tweak labels if your PDF wording differs)
+    // 3) Extract metrics
     const medianPrice  = toNum(takeNum(text.match(/Median\s+Sale\s+Price\s*\$?([\d,]+)/i)));
     const closed       = toNum(takeNum(text.match(/\bClosed\s+Sales\s*([\d,]+)/i)));
     const dom          = toNum(takeNum(text.match(/Days\s+on\s+Market\s*([\d,]+)/i)));
     const monthsSupply = toNum((text.match(/Months\s+of\s+(?:Inventory|Supply)\s*([\d.]+)/i)?.[1] || "").trim());
     const newListings  = toNum(takeNum(text.match(/\bNew\s+Listings\s*([\d,]+)/i)));
 
-    if ([medianPrice, closed, dom, monthsSupply].some((v) => v == null)) {
+    if ([medianPrice, closed, dom, monthsSupply].some(v => v == null)) {
       return res.status(422).json({
-        error: "Parser needs tuning: one or more metrics not found.",
+        error: "Parser needs tuning: metric(s) not found.",
         found: { medianPrice, closed, dom, monthsSupply, newListings }
       });
     }
 
-    // 4) Guaranteed YYYY-MM key
+    // 4) Month key + payload
     const monthKey = monthKeyFrom(text);
-
-    // 5) Respond in the shape the frontend expects
     const payload = {
       updatedAt: new Date().toISOString().slice(0, 10),
       months: {
         [monthKey]: {
           sf:    { medianPrice, closed, dom, monthsSupply, newListings },
-          condo: { medianPrice, closed, dom, monthsSupply, newListings }, // extend later if condo-specific
-          sfReport: RPR_PDF_URL
+          condo: { medianPrice, closed, dom, monthsSupply, newListings },
+          sfReport: RPR_PDF_URL,
+          condoReport: RPR_PDF_URL
+        }
+      }
+    };
+
+    res.setHeader("Cache-Control", "s-maxage=82800, stale-while-revalidate=3600");
+    res.status(200).json(payload);
+  } catch (e) {
+    res.status(500).json({ error: String(e?.message || e) });
+  }
+}
