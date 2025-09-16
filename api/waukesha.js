@@ -195,7 +195,17 @@ if ([medianPrice, closed, dom, monthsSupply].some(v => v == null)) {
 
 
     res.setHeader("Cache-Control", "s-maxage=82800, stale-while-revalidate=3600");
-    res.status(200).json(payload);
+    res.status(200).json({
+  updatedAt: new Date().toISOString().slice(0, 10),
+  months: {
+    [monthKey]: {
+      sf:    { medianPrice, closed, dom, monthsSupply, newListings, activeListings },
+      condo: { medianPrice, closed, dom, monthsSupply, newListings, activeListings },
+      sfReport: RPR_PDF_URL,
+      condoReport: RPR_PDF_URL
+    }
+  }
+});
   } catch (e) {
     res.status(500).json({ error: String(e?.message || e) });
   }
