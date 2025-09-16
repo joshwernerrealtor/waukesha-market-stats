@@ -120,11 +120,19 @@ const closed = findIntNear(
   text
 );
 
-// New Listings — same trick
-const newListings = findIntNear(
-  "(New\\s+Listings|Listings\\s+New|Newly\\s+Listed|New\\s+Listings\\s+Count|Listings\\s+Added|Added\\s+Listings)",
-  text
-);
+// New Listings — look up to ~2000 chars after the "New Listings" section for "# of Properties - N"
+let newListings = null;
+const nlWide = text.match(/New\s+Listings[\s\S]{0,2000}?#\s*of\s*Properties\s*[-–—]\s*([\d,]+)/i);
+if (nlWide?.[1]) {
+  newListings = Number(nlWide[1].replace(/,/g, ""));
+} else {
+  // fallback: same nearby-search helper you already have
+  newListings = findIntNear(
+    "(New\\s+Listings|Listings\\s+New|Newly\\s+Listed|New\\s+Listings\\s+Count|Listings\\s+Added|Added\\s+Listings)",
+    text,
+    1200
+  );
+}
 
 if ([medianPrice, closed, dom, monthsSupply].some(v => v == null)) {
   return res.status(422).json({
