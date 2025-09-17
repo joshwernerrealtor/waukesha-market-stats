@@ -1,15 +1,19 @@
 // api/waukesha.js
-// Fetches your public RPR PDF, parses key stats, supports ?debug=1 and ?debug=new
-export const config = { runtime: 'nodejs' };
+// Parses RPR PDFs for Single-Family and Condo, returns both in one payload.
 
-const RPR_PDF_URL =
+const SF_PDF_URL =
   "https://www.narrpr.com/reports-v2/c296fac6-035d-4e9a-84fd-28455ab0339f/pdf";
 
-// --- helpers ---
+// ⬇️ When you have your Condo/Townhome dynamic link, paste it here.
+// Leave as "" (empty string) for now; the API will mirror SF into Condo.
+const CONDO_PDF_URL = "https://www.narrpr.com/reports-v2/5a675486-5c7b-4bb0-9946-0cffa3070f05/pdf";
+
+// ---------- helpers ----------
 function monthKeyFrom(text) {
   const label =
     text.match(/Market\s+Trends.*?for\s+([A-Za-z]+\s+\d{4})/is)?.[1] ||
     text.match(/Updated\s+through\s+([A-Za-z]+\s+\d{4})/i)?.[1] ||
+    text.match(/\b([A-Za-z]+\s+\d{4})\b/g)?.[0] ||
     null;
   if (label) {
     const dt = new Date(`${label} 1`);
@@ -26,7 +30,7 @@ function monthKeyFrom(text) {
 function findIntNear(labelRegexSource, text, span = 800) {
   const label = new RegExp(labelRegexSource, "i");
 
-  // a) After the label: look for "# of Properties - N" first, then any number (not a %)
+  // a) After the label: prefer "# of Properties - N", else any number (not a %)
   const a = label.exec(text);
   if (a) {
     const window = text.slice(a.index, Math.min(text.length, a.index + a[0].length + span));
@@ -36,7 +40,7 @@ function findIntNear(labelRegexSource, text, span = 800) {
     if (m?.[1]) return Number(m[1].replace(/,/g, ""));
   }
 
-  // b) Number appears first, then the label
+  // b) Number first, label after
   const b = new RegExp(
     `(\\d{1,3}(?:,\\d{3})+|\\d{1,4})(?:\\.\\d+)?(?!\\s*%)[\\s\\S]{0,${span}}${labelRegexSource}`,
     "i"
@@ -45,106 +49,128 @@ function findIntNear(labelRegexSource, text, span = 800) {
   return null;
 }
 
+async function fetchTextFromPdf(url) {
+  const resp = await fetch(url, {
+    redirect: "follow",
+    headers: {
+      "User-Agent": "Mozilla/5.0",
+      "Accept": "application/pdf,*/*;q=0.8",
+      "Referer": "https://www.narrpr.com/"
+    }
+  });
+  if (!resp.ok) throw new Error(`Upstream ${resp.status} ${resp.statusText}`);
+  const ct = resp.headers.get("content-type") || "";
+  const ab = await resp.arrayBuffer();
+  if (!ct.includes("application/pdf")) {
+    throw new Error("Expected PDF but got non-PDF content");
+  }
+  const mod = await import("pdf-parse/lib/pdf-parse.js");
+  const pdfParse = mod.default || mod;
+  const { text = "" } = await pdfParse(Buffer.from(ab));
+  return text;
+}
+
+function parseMetrics(text) {
+  // Median Sold Price
+  const medianPrice = (() => {
+    const m =
+      text.match(/Median\s+(?:Sold|Sale|Sales)\s+Price[\s\S]{0,120}?\$?\s*([\d,]+)/i) ||
+      text.match(/Median\s+Price[\s\S]{0,120}?\$?\s*([\d,]+)/i);
+    return m?.[1] ? Number(m[1].replace(/,/g, "")) : null;
+  })();
+
+  // Months of Inventory
+  const monthsSupply = (() => {
+    const m =
+      text.match(/Months\s+of\s+(?:Inventory|Supply)[\s\S]{0,120}?([\d.]+)/i) ||
+      text.match(/Mos\.?\s+Supply[\s\S]{0,120}?([\d.]+)/i);
+    return m?.[1] ? Number(m[1]) : null;
+  })();
+
+  // DOM (RPR shows "Median Days in RPR" on your PDF)
+  let dom = findIntNear(
+    "(Median\\s+Days\\s+in\\s+RPR|Median\\s+Days\\s+on\\s+Market|Days\\s+on\\s+Market|Median\\s+DOM|\\bDOM\\b|Median\\s+Days\\s+to\\s+(?:Close|Pending))",
+    text
+  );
+  if (dom == null) {
+    const m = text.match(/\bDays\s+on\s+Market\b[\s\S]{0,200}?([0-9]{1,3})\s*days?/i);
+    if (m?.[1]) dom = Number(m[1]);
+  }
+
+  // Closed (near "Sold Listings")
+  const closed = findIntNear(
+    "(Closed\\s+(?:Sales|Listings)|Closings|Closed\\s+Transactions|Properties\\s+Sold|Sold\\s+Properties|Total\\s+Closed|Sold\\s+Listings)",
+    text
+  );
+
+  // Active Listings (from "Active Listings" section)
+  const activeListings = (() => {
+    const m = text.match(/Active\s+Listings[\s\S]{0,2000}?#\s*of\s*Properties\s*[-–—]\s*([\d,]+)/i);
+    return m?.[1] ? Number(m[1].replace(/,/g, "")) : null;
+  })();
+
+  // Month key
+  const monthKey = monthKeyFrom(text);
+
+  return { medianPrice, closed, dom, monthsSupply, activeListings, monthKey };
+}
+
+// ---------- handler ----------
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   if (req.method === "OPTIONS") return res.status(200).end();
 
   try {
-    // 1) Fetch the PDF
-    const resp = await fetch(RPR_PDF_URL, {
-      redirect: "follow",
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/pdf,*/*;q=0.8",
-        "Referer": "https://www.narrpr.com/"
+    // Parse SF
+    const sfText = await fetchTextFromPdf(SF_PDF_URL);
+    const sf = parseMetrics(sfText);
+
+    // Parse Condo if a URL is set; otherwise mirror SF
+    let condo = sf;
+    let condoReportUrl = SF_PDF_URL;
+    if (CONDO_PDF_URL && CONDO_PDF_URL.trim()) {
+      try {
+        const condoText = await fetchTextFromPdf(CONDO_PDF_URL.trim());
+        condo = parseMetrics(condoText);
+        condoReportUrl = CONDO_PDF_URL.trim();
+      } catch (e) {
+        // If condo parse fails, keep mirroring SF but note the error.
+        console.warn("Condo parse failed:", e?.message || e);
       }
-    });
-    if (!resp.ok) return res.status(502).json({ error: `Upstream ${resp.status} ${resp.statusText}` });
-
-    const ct = resp.headers.get("content-type") || "";
-    const ab = await resp.arrayBuffer();
-    if (!ct.includes("application/pdf")) {
-      let sample = "";
-      try { sample = Buffer.from(ab).toString("utf8").slice(0, 200); } catch {}
-      return res.status(502).json({ error: "Expected PDF, got non-PDF", contentType: ct, sample });
     }
 
-    // 2) Parse text (use pdf-parse library file to avoid test-path issues)
-    const mod = await import("pdf-parse/lib/pdf-parse.js");
-    const pdfParse = mod.default || mod;
-    const { text = "" } = await pdfParse(Buffer.from(ab));
-
-    // 3) Extract metrics
-    // Median Sold Price
-    const medianPrice = (() => {
-      const m =
-        text.match(/Median\s+(?:Sold|Sale|Sales)\s+Price[\s\S]{0,120}?\$?\s*([\d,]+)/i) ||
-        text.match(/Median\s+Price[\s\S]{0,120}?\$?\s*([\d,]+)/i);
-      return m?.[1] ? Number(m[1].replace(/,/g, "")) : null;
-    })();
-
-    // Months of Inventory
-    const monthsSupply = (() => {
-      const m =
-        text.match(/Months\s+of\s+(?:Inventory|Supply)[\s\S]{0,120}?([\d.]+)/i) ||
-        text.match(/Mos\.?\s+Supply[\s\S]{0,120}?([\d.]+)/i);
-      return m?.[1] ? Number(m[1]) : null;
-    })();
-
-    // DOM (your PDF shows "Median Days in RPR")
-    let dom = findIntNear(
-      "(Median\\s+Days\\s+in\\s+RPR|Median\\s+Days\\s+on\\s+Market|Days\\s+on\\s+Market|Median\\s+DOM|\\bDOM\\b|Median\\s+Days\\s+to\\s+(?:Close|Pending))",
-      text
-    );
-    if (dom == null) {
-      const m = text.match(/\bDays\s+on\s+Market\b[\s\S]{0,200}?([0-9]{1,3})\s*days?/i);
-      if (m?.[1]) dom = Number(m[1]);
-    }
-
-    // Closed Sales — near "Sold Listings" section with "# of Properties - N"
-    const closed = findIntNear(
-      "(Closed\\s+(?:Sales|Listings)|Closings|Closed\\s+Transactions|Properties\\s+Sold|Sold\\s+Properties|Total\\s+Closed|Sold\\s+Listings)",
-      text
-    );
-
-    // Active Listings — pull "# of Properties - N" from the Active section
-    const activeListings = (() => {
-      const m = text.match(/Active\s+Listings[\s\S]{0,2000}?#\s*of\s*Properties\s*[-–—]\s*([\d,]+)/i);
-      return m?.[1] ? Number(m[1].replace(/,/g, "")) : null;
-    })();
-
-    // New Listings — many county PDFs don’t include this; try, but allow null
-    let newListings = null;
-    const nlWide = text.match(/New\s+Listings[\s\S]{0,2000}?#\s*of\s*Properties\s*[-–—]\s*([\d,]+)/i);
-    if (nlWide?.[1]) {
-      newListings = Number(nlWide[1].replace(/,/g, ""));
-    } else {
-      newListings = findIntNear(
-        "(New\\s+Listings|Listings\\s+New|Newly\\s+Listed|New\\s+Listings\\s+Count|Listings\\s+Added|Added\\s+Listings)",
-        text,
-        1200
-      );
-    }
-
-    // Require the core four; allow newListings to be null
-    if ([medianPrice, closed, dom, monthsSupply].some(v => v == null)) {
+    // Require core SF metrics
+    if ([sf.medianPrice, sf.closed, sf.dom, sf.monthsSupply].some(v => v == null)) {
       return res.status(422).json({
-        error: "Parser needs tuning: metric(s) not found.",
-        found: { medianPrice, closed, dom, monthsSupply, newListings, activeListings }
+        error: "Parser needs tuning for SF: missing one or more metrics.",
+        found: sf
       });
     }
 
-    // 4) Respond
-    const monthKey = monthKeyFrom(text);
+    const monthKey = sf.monthKey;
     const payload = {
       updatedAt: new Date().toISOString().slice(0, 10),
       months: {
         [monthKey]: {
-          sf:    { medianPrice, closed, dom, monthsSupply, newListings, activeListings },
-          condo: { medianPrice, closed, dom, monthsSupply, newListings, activeListings },
-          sfReport: RPR_PDF_URL,
-          condoReport: RPR_PDF_URL
+          sf: {
+            medianPrice: sf.medianPrice,
+            closed: sf.closed,
+            dom: sf.dom,
+            monthsSupply: sf.monthsSupply,
+            newListings: null,
+            activeListings: sf.activeListings
+          },
+          condo: {
+            medianPrice: condo.medianPrice ?? sf.medianPrice,
+            closed: condo.closed ?? sf.closed,
+            dom: condo.dom ?? sf.dom,
+            monthsSupply: condo.monthsSupply ?? sf.monthsSupply,
+            newListings: null,
+            activeListings: condo.activeListings ?? sf.activeListings
+          },
+          sfReport: SF_PDF_URL,
+          condoReport: condoReportUrl
         }
       }
     };
