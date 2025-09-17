@@ -284,6 +284,10 @@ condoReport.href = dataObj.months[key].condoReport;
 
     function render(payload){
       updatedAtEl.textContent = new Date(payload.updatedAt).toLocaleDateString();
+      const printUpdated = document.getElementById("printUpdated");
+if (printUpdated) {
+  printUpdated.textContent = `Updated: ${new Date(payload.updatedAt).toLocaleDateString()}`;
+}
       const months=Object.keys(payload.months).sort().reverse();
       monthSelect.innerHTML="";
       months.forEach(k=>{
