@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
+  <meta property="og:site_name" content="Josh Werner — Realty ONE Group Luminous" />
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Waukesha County Housing Market Statistics</title>
@@ -130,6 +131,20 @@
   ],
   "dateModified":"2025-09-16"
 }
+<script>
+// Sync JSON-LD dateModified with API.updatedAt
+(async () => {
+  try {
+    const r = await fetch("/api/waukesha", { cache: "no-store" });
+    const j = await r.json();
+    const tag = document.getElementById("ld-dataset");
+    if (tag && j?.updatedAt) {
+      const data = JSON.parse(tag.textContent);
+      data.dateModified = j.updatedAt;
+      tag.textContent = JSON.stringify(data);
+    }
+  } catch {}
+})();
 </script>
 </head>
 <body>
