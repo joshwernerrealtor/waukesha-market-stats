@@ -75,27 +75,6 @@ export default async function handler(req, res) {
     const pdfParse = mod.default || mod;
     const { text = "" } = await pdfParse(Buffer.from(ab));
 
-    // ---- DEBUG (stop here if query has ?debug=...) ----
-    try {
-      const urlObj = new URL(req.url, "http://local");
-      const dbg = urlObj.searchParams.get("debug");
-      if (dbg === "1") {
-        return res.status(200).json({ length: text.length, head: text.slice(0, 4000) });
-      }
-      if (dbg === "new") {
-        const m = text.match(/New\s+Listings/i);
-        if (!m) return res.status(200).json({ found: false, note: "No 'New Listings' label found." });
-        const idx = m.index;
-        const start = Math.max(0, idx - 500);
-        const end = Math.min(text.length, idx + 2500);
-        const snippet = text.slice(start, end);
-        return res.status(200).json({ found: true, at: idx, snippet });
-      }
-    } catch {
-      /* ignore */
-    }
-    // ---- END DEBUG ----
-
     // 3) Extract metrics
     // Median Sold Price
     const medianPrice = (() => {
