@@ -67,6 +67,35 @@
   .hero, .grid-2, #communities, footer.container { margin-left: 0.25in; margin-right: 0.25in; }
 }
 </style>
+<style>
+/* Hide the brand block on screen */
+.print-brand { display: none; }
+
+/* Print styles for the brand header */
+@media print {
+  .print-brand {
+    display: flex !important;
+    align-items: center;
+    gap: 14px;
+    margin: 0 0 0.25in 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .print-logo {
+    height: 56px;            /* adjust 48–72px to fit your logo */
+    max-width: 260px;
+    object-fit: contain;
+  }
+  .print-contact { font-size: 12px; line-height: 1.35; }
+  .print-contact strong { font-size: 14px; }
+  .print-contact a {
+    color: #111 !important;
+    text-decoration: none;
+    border-bottom: 1px solid #ddd;
+  }
+  .print-updated { margin-top: 2px; font-size: 11px; color: #6b7280; }
+}
+</style>
 </head>
 <body>
   <header class="container">
