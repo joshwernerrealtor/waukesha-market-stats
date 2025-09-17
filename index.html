@@ -131,20 +131,22 @@
   ],
   "dateModified":"2025-09-16"
 }
+</script>  <!-- ← this closing tag was missing -->
+
 <script>
-// Sync JSON-LD dateModified with API.updatedAt
-(async () => {
-  try {
-    const r = await fetch("/api/waukesha", { cache: "no-store" });
-    const j = await r.json();
-    const tag = document.getElementById("ld-dataset");
-    if (tag && j?.updatedAt) {
-      const data = JSON.parse(tag.textContent);
-      data.dateModified = j.updatedAt;
-      tag.textContent = JSON.stringify(data);
-    }
-  } catch {}
-})();
+  // Sync JSON-LD dateModified with API.updatedAt
+  (async () => {
+    try {
+      const r = await fetch("/api/waukesha", { cache: "no-store" });
+      const j = await r.json();
+      const tag = document.getElementById("ld-dataset");
+      if (tag && j?.updatedAt) {
+        const data = JSON.parse(tag.textContent);
+        data.dateModified = j.updatedAt;
+        tag.textContent = JSON.stringify(data);
+      }
+    } catch {}
+  })();
 </script>
 </head>
 <body>
