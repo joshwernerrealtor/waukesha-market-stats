@@ -122,6 +122,24 @@
     const sfKpis=$("#sfKpis"), condoKpis=$("#condoKpis");
     const sfReport=$("#sfReport"), condoReport=$("#condoReport");
     const searchInput=$("#searchInput"), communityGrid=$("#communityGrid");
+    function renderCommunities(list) {
+  communityGrid.innerHTML = "";
+
+  if (!Array.isArray(list) || list.length === 0) {
+    communityGrid.innerHTML = '<p class="subtitle">No matching communities.</p>';
+    return;
+  }
+
+  for (const c of list) {
+    const card = document.createElement("div");
+    card.className = "community-card";
+    card.innerHTML = `
+      <span><strong>${c.name}</strong></span>
+      <a class="link" href="${c.url}" target="_blank" rel="noopener">View PDF</a>
+    `;
+    communityGrid.appendChild(card);
+  }
+}
 
     const fCurrency=v=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0}).format(v);
     const fNumber=v=>new Intl.NumberFormat("en-US").format(v);
