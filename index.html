@@ -165,6 +165,10 @@
       const [y,m]=key.split("-"); const label=new Date(+y, +m-1, 1).toLocaleDateString(undefined,{month:"long",year:"numeric"});
       sfMonthEl.textContent=label; condoMonthEl.textContent=label;
       sfKpis.innerHTML=""; condoKpis.innerHTML="";
+      // point the links at whatever the API returned for this month
+sfReport.href    = dataObj.months[key].sfReport;
+condoReport.href = dataObj.months[key].condoReport;
+
 
       const METRICS=[
         {key:"medianPrice",label:"Median Price",type:"currency"},
