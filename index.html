@@ -33,6 +33,22 @@
     .search input{border:none;outline:none;flex:1;font-size:14px}
     a.link{color:var(--ink);text-decoration:none;border-bottom:1px solid #ddd}
     .foot{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--muted);font-size:12px;margin-top:14px}
+  /* Smooth anchor scroll + offset for sticky nav */
+html { scroll-behavior: smooth; }
+#sf, #condo, #communities { scroll-margin-top: 80px; }
+
+/* Sticky subnav */
+.subnav {
+  position: sticky;
+  top: 0;               /* sticks to top of the viewport */
+  z-index: 20;
+  background: var(--card);
+  padding: 10px 0;
+  margin-top: 8px;
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #eee;
+  box-shadow: 0 2px 10px rgba(0,0,0,.04);
+}
   </style>
   <style>
 /* ---------- Print styles ---------- */
