@@ -173,6 +173,22 @@ a.link:hover{ border-bottom-color: var(--brand); }
     /* --- Warm page background --- */
 :root { --bg: #fbfaf7; }  /* was #f7f7f9; this is a touch warmer */
 body  { background: var(--bg); }
+  /* --- Community row dividers (mobile only) --- */
+@media (max-width: 679.98px){
+  .community-grid{ row-gap: 8px; }
+  .community-card{
+    position: relative;
+    border-color: #e9e5d6; /* warmer, softer */
+  }
+  .community-card::after{
+    content:"";
+    position:absolute;
+    left:12px; right:12px; bottom:-7px;
+    height:1px;
+    background: linear-gradient(90deg, transparent, rgba(197,163,73,.25), transparent);
+    pointer-events:none;
+  }
+}
   </style>
 <style>
 /* ---------- Print styles ---------- */
