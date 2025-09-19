@@ -189,6 +189,20 @@ body  { background: var(--bg); }
     pointer-events:none;
   }
 }
+  /* --- KPI value: subtle depth via text gradient (with safe fallback) --- */
+.kpi .value { color: var(--ink); } /* fallback if no clip support */
+@supports (-webkit-background-clip: text) {
+  .kpi .value{
+    background: linear-gradient(
+      180deg,
+      var(--ink) 0%,
+      rgba(31,41,55,.92) 60%,
+      rgba(31,41,55,.82) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
   </style>
 <style>
 /* ---------- Print styles ---------- */
