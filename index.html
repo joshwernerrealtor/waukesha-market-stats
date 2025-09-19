@@ -238,6 +238,29 @@ body  { background: var(--bg); }
 @media print{
   .card h2::after{ display:none; }
 }
+    /* --- Warm, accessible focus rings (screen only) --- */
+:root{
+  --focus-outline: #e7d5a1;           /* light gold */
+  --focus-ring:    rgba(197,163,73,.35);
+}
+
+/* Remove default outline, then add our own on keyboard focus */
+:where(.button, .select, .search input, .community-card, a.link){
+  outline: none;
+}
+:where(.button, .select, .search input, .community-card, a.link):focus-visible{
+  outline: 2px solid var(--focus-outline);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--focus-ring);
+  border-radius: 10px; /* soft corners for buttons/inputs */
+}
+
+/* Don’t show rings in print */
+@media print{
+  :where(.button, .select, .search input, .community-card, a.link):focus-visible{
+    outline: none !important; box-shadow: none !important;
+  }
+}
   </style>
 <style>
 /* ---------- Print styles ---------- */
