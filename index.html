@@ -106,6 +106,43 @@
 .embed header.container,
 .embed footer.container { display: none; }
 .embed .container { padding-top: 12px; }
+  /* --- Brand accents: soft gold tints and cleaner controls --- */
+:root{
+  --brand-50:#f8f3e6;
+  --brand-100:#f1e6c9;
+  --brand-200:#e7d5a1;
+  --brand-600:#a8842d;
+  --brand-700:#8f6f25;
+}
+
+/* Primary button */
+.button{
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand-600);
+  box-shadow: var(--shadow-sm);
+}
+.button:hover{ filter: brightness(0.95); }
+
+/* Small chips */
+.pill{
+  background: var(--brand-50);
+  border-color: var(--brand-200);
+}
+
+/* Month tag style (you already have <span class="badge" ...>) */
+.badge{
+  background: var(--brand-50);
+  border: 1px solid var(--brand-200);
+  color: var(--brand-700);
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+/* Links: lighter underline, stronger on hover */
+a.link{ border-bottom-color: rgba(197,163,73,.4); }
+a.link:hover{ border-bottom-color: var(--brand); }
   </style>
 <style>
 /* ---------- Print styles ---------- */
