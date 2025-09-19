@@ -329,19 +329,38 @@
 
   // ---- KPI card
   function kpiEl(label, value, prev, type){
-    const el = document.createElement("div");
-    el.className = "kpi";
+  const el = document.createElement("div");
+  el.className = "kpi";
 
-    let dir = null, pct = 0, formatted = "—";
-    if (typeof value === "number" && !Number.isNaN(value)) {
-      const d = delta(value, prev);
-      dir = d.dir; pct = d.pct;
-      formatted = type === "currency"
-        ? fCurrency(value)
-        : type === "number1"
-          ? fNumber1(value)
-          : fNumber(value);
-    }
+  const hasValue = typeof value === "number" && !Number.isNaN(value);
+  const hasPrev  = typeof prev  === "number" && !Number.isNaN(prev);
+
+  // format value
+  let formatted = "—";
+  if (hasValue) {
+    formatted = type === "currency" ? fCurrency(value)
+              : type === "number1" ? fNumber1(value)
+              : fNumber(value);
+  }
+
+  // build delta block only if we have a previous month to compare
+  let deltaBlock = "";
+  if (hasValue && hasPrev) {
+    const diff = value - prev;
+    const dir  = diff === 0 ? 0 : (diff > 0 ? 1 : -1);
+    const pct  = prev === 0 ? 0 : (diff / prev) * 100;
+    const arrow = dir === 0 ? "—" : (dir > 0 ? "▲" : "▼");
+    const cls   = dir === 0 ? "" : (dir > 0 ? "up" : "down");
+    deltaBlock = `<div class="delta ${cls}">${arrow} ${Math.abs(pct).toFixed(1)}% MoM</div>`;
+  }
+
+  el.innerHTML = `
+    <div class="label">${label}</div>
+    <div class="value">${formatted}</div>
+    ${deltaBlock}
+  `;
+  return el;
+}
 
     const arrow = dir == null ? "" : dir === 0 ? "—" : (dir > 0 ? "▲" : "▼");
     const cls   = dir == null ? "" : dir === 0 ? ""  : (dir > 0 ? "up" : "down");
