@@ -150,6 +150,26 @@ a.link:hover{ border-bottom-color: var(--brand); }
     radial-gradient(520px 180px at -10% 110%, rgba(197,163,73,.12), transparent 70%),
     var(--card);
 }
+    /* --- Card accent + gentle hover (screen only) --- */
+.card{
+  position: relative;
+  transition: box-shadow .2s ease, transform .2s ease;
+}
+@media (hover:hover){
+  .card:hover{
+    box-shadow: 0 12px 26px rgba(0,0,0,.10);
+    transform: translateY(-1px);
+  }
+}
+.card::before{
+  content:"";
+  position:absolute;
+  top:0; left:0; right:0;
+  height:3px;
+  border-radius: var(--radius) var(--radius) 0 0; /* round the top corners */
+  background: linear-gradient(90deg, var(--brand), rgba(197,163,73,0) 65%);
+  pointer-events:none;
+}
   </style>
 <style>
 /* ---------- Print styles ---------- */
