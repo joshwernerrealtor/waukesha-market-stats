@@ -189,18 +189,35 @@ body  { background: var(--bg); }
     pointer-events:none;
   }
 }
-  /* --- KPI value: subtle depth via text gradient (with safe fallback) --- */
-.kpi .value { color: var(--ink); } /* fallback if no clip support */
+  /* --- KPI value: clearer depth + fallback + print-safe --- */
+.kpi .value{
+  color: var(--ink);                 /* fallback color */
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.2px;
+  text-shadow: 0 1px 0 rgba(255,255,255,.55); /* tiny lift on light bg */
+}
+
 @supports (-webkit-background-clip: text) {
   .kpi .value{
     background: linear-gradient(
       180deg,
       var(--ink) 0%,
-      rgba(31,41,55,.92) 60%,
-      rgba(31,41,55,.82) 100%
+      rgba(31,41,55,.90) 55%,
+      rgba(31,41,55,.76) 100%
     );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    text-shadow: none; /* gradient provides the depth */
+  }
+}
+
+/* Keep numbers pure on paper */
+@media print{
+  .kpi .value{
+    background: none !important;
+    -webkit-text-fill-color: initial !important;
+    color: #111 !important;
+    text-shadow: none !important;
   }
 }
   </style>
