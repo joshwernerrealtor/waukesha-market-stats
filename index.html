@@ -276,7 +276,7 @@ body  { background: var(--bg); }
   html, body { background: #fff !important; color: #111 !important; }
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
-  /* Layout: two columns for SF/Condo, communities start on page 2 */
+  /* Layout: two columns for SF/Condo */
   .container { max-width: none !important; padding: 0 !important; }
   header.container, main.container, footer.container { padding: 0 !important; }
   .hero { margin: 0 0 0.25in 0 !important; box-shadow: none !important; border: none !important; border-radius: 0 !important; }
@@ -284,7 +284,6 @@ body  { background: var(--bg); }
   .grid-2 { grid-template-columns: 1fr 1fr !important; gap: 0.35in !important; }
   .card { box-shadow: none !important; border: 1px solid #e5e7eb !important; border-radius: 8px !important; }
   .kpi { break-inside: avoid; }
-  #communities.card { page-break-before: always; } /* communities on page 2 */
   .foot { color: #6b7280 !important; }
 
   /* Tighter type for print */
@@ -293,15 +292,16 @@ body  { background: var(--bg); }
   .kpi .label { font-size: 11px !important; }
   .kpi .value { font-size: 20px !important; }
 
-  /* Make links look nice on paper */
+  /* Links on paper */
   a.link { color: #111 !important; border-bottom: 1px solid #ddd !important; text-decoration: none !important; }
-  /* If you want URLs to print after links, uncomment:
-  a.link:after { content: " (" attr(href) ")"; font-size: 11px; color: #6b7280; }
-  */
 
-  /* Remove excess margins so content fits one page comfortably */
+  /* Margins so content fits one page comfortably */
   .container > * { margin-left: 0.25in; margin-right: 0.25in; }
   .hero, .grid-2, #communities, footer.container { margin-left: 0.25in; margin-right: 0.25in; }
+
+  /* One-page handout: hide Communities on paper */
+  #communities { display: none !important; }
+  #communities, #communities.card { page-break-before: auto !important; break-before: auto !important; }
 }
   /* --- Community link hover: gentle lift + gold arrow --- */
 .community-card{
