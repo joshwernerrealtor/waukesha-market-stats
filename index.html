@@ -97,6 +97,15 @@
     /* Smooth anchor scroll + offset for sticky nav */
     html { scroll-behavior:smooth; }
     #sf, #condo, #communities { scroll-margin-top:80px; }
+  /* --- Loading skeletons --- */
+.skel { background: #eef0f3; border-radius: 10px; height: 32px; animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 0%{opacity:.6} 50%{opacity:1} 100%{opacity:.6} }
+.muted { color: var(--muted); }
+
+/* --- Embed mode (hide chrome in iframes) --- */
+.embed header.container,
+.embed footer.container { display: none; }
+.embed .container { padding-top: 12px; }
   </style>
 <style>
 /* ---------- Print styles ---------- */
@@ -307,6 +316,29 @@
     const searchInput=$("#searchInput"), communityGrid=$("#communityGrid");
     function renderCommunities(list) {
   communityGrid.innerHTML = "";
+// --- Loading skeletons + error state ---
+function skeletonHTML(count=6){
+  let html = "";
+  for (let i=0;i<count;i++) html += '<div class="kpi"><div class="skel"></div></div>';
+  return html;
+}
+
+function setLoading(isLoading){
+  if(isLoading){
+    sfKpis.innerHTML = skeletonHTML();
+    condoKpis.innerHTML = skeletonHTML();
+    $("#sfMonth").textContent = $("#condoMonth").textContent = "Loading…";
+    $("#sfNote").textContent = $("#condoNote").textContent = "";
+  }
+}
+
+function showError(message){
+  const msg = `<div class="kpi"><div class="label">Status</div><div class="value" style="font-size:16px">Couldn’t load live stats</div><div class="delta" style="color:#b91c1c">${message || "Please try again."}</div></div>`;
+  sfKpis.innerHTML = msg;
+  condoKpis.innerHTML = msg;
+  $("#sfMonth").textContent = $("#condoMonth").textContent = "—";
+  $("#sfNote").textContent = $("#condoNote").textContent = "Data will auto-refresh when available.";
+}
 
   if (!Array.isArray(list) || list.length === 0) {
     communityGrid.innerHTML = '<p class="subtitle">No matching communities.</p>';
@@ -411,15 +443,30 @@ if (printUpdated) {
     }
 
     async function boot(){
-      try{
-        const r=await fetch(ENDPOINT, { cache: "no-store" });
-        if(!r.ok) throw new Error("Bad response");
-        const json=await r.json(); // { updatedAt, months }
-        render(json);
-      }catch(e){
-        console.error("Could not load live county stats:", e);
-      }
+  try{
+    // Embed mode: hide header/footer when ?embed=1
+    if (new URLSearchParams(location.search).get("embed") === "1") {
+      document.body.classList.add("embed");
     }
+
+    setLoading(true);
+
+    const r = await fetch(ENDPOINT, { cache: "no-store" });
+    if(!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+    const json = await r.json(); // { updatedAt, months }
+
+    // fill the print header date if present
+    const pu = $("#printUpdated");
+    if (pu && json?.updatedAt) {
+      pu.textContent = "Updated " + new Date(json.updatedAt).toLocaleDateString();
+    }
+
+    render(json);
+  }catch(e){
+    console.error(e);
+    showError(String(e.message || e));
+  }
+}
     document.addEventListener("DOMContentLoaded", boot);
   </script>
 </body>
