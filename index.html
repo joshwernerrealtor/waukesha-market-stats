@@ -220,6 +220,24 @@ body  { background: var(--bg); }
     text-shadow: none !important;
   }
 }
+    /* --- Section title accent --- */
+.card h2{
+  position: relative;
+  padding-bottom: 6px;
+}
+.card h2::after{
+  content:"";
+  position:absolute;
+  left:0; bottom:0;
+  width:42px; height:3px;
+  background: linear-gradient(90deg, var(--brand), rgba(197,163,73,0));
+  border-radius:2px;
+  pointer-events:none;
+}
+/* Keep print clean */
+@media print{
+  .card h2::after{ display:none; }
+}
   </style>
 <style>
 /* ---------- Print styles ---------- */
