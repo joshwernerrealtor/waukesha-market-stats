@@ -218,6 +218,12 @@ body  { background: var(--bg); }
     -webkit-text-fill-color: initial !important;
     color: #111 !important;
     text-shadow: none !important;
+    /* One-page handout: hide Communities on paper */
+#communities { display: none !important; }
+
+/* Make sure we don't force a page break anymore */
+#communities.card { page-break-before: auto !important; }
+
   }
 }
     /* --- Section title accent --- */
