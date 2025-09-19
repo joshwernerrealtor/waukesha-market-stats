@@ -209,6 +209,31 @@ body  { background: var(--bg); }
   .container > * { margin-left: 0.25in; margin-right: 0.25in; }
   .hero, .grid-2, #communities, footer.container { margin-left: 0.25in; margin-right: 0.25in; }
 }
+  /* --- Community link hover: gentle lift + gold arrow --- */
+.community-card{
+  transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease, background .15s ease;
+}
+.community-card span:last-child{
+  color:#9ca3af !important;              /* override the inline color from HTML */
+  transition: transform .15s ease, color .15s ease;
+}
+@media (hover:hover){
+  .community-card:hover{
+    background:#fff;
+    border-color:#e6e0cf;
+    box-shadow: 0 8px 18px rgba(0,0,0,.08);
+    transform: translateY(-1px);
+  }
+  .community-card:hover span:last-child{
+    color: var(--brand-700) !important;   /* warm gold on hover */
+    transform: translateX(2px);           /* tiny nudge → */
+  }
+}
+/* Keyboard focus */
+.community-card:focus-visible{
+  outline: 2px solid var(--brand-200);
+  outline-offset: 2px;
+}
 </style>
 <style>
 /* Hide the brand block on screen */
