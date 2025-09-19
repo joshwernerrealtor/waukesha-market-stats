@@ -310,6 +310,14 @@
     { name: "Sussex",            url: "https://www.narrpr.com/reports-v2/41f387a4-b092-42c4-b23a-b3575ae52116/pdf" }
   ];
 
+  // If this page is opened with ?print=1, auto-trigger print after load
+(function(){
+  const params = new URLSearchParams(location.search);
+  if (params.get('print') === '1') {
+    window.addEventListener('load', () => setTimeout(() => window.print(), 300));
+  }
+})();
+  
   // --- Helpers
   const $=(q,el=document)=>el.querySelector(q);
 
@@ -433,8 +441,20 @@
     if (pu && payload?.updatedAt) pu.textContent = "Updated " + new Date(payload.updatedAt).toLocaleDateString();
 
     const btn = $("#printBtn");
-    if (btn) btn.onclick=()=>window.print();
-  }
+if (btn) {
+  btn.onclick = () => {
+    const inIframe = (window.top !== window.self);
+    if (inIframe) {
+      // Open a clean, top-level tab that auto-prints
+      const url = new URL(location.href);
+      url.searchParams.set('print', '1'); // trigger auto-print
+      url.searchParams.delete('embed');   // ensure full header for print
+      window.open(url.toString(), '_blank', 'noopener');
+    } else {
+      window.print();
+    }
+  };
+}
 
   // --- Boot
   async function boot(){
