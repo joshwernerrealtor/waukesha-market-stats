@@ -292,11 +292,11 @@
     <p style="font-size:12px;color:var(--muted)">Source: Realtors Property Resource® (RPR). County stats auto-refresh from the county PDF via a secure API.</p>
   </footer>
 
-  <script>
+<script>
 (() => {
   const ENDPOINT = "/api/waukesha";
 
-  // ---- Config: communities list (edit URLs/names as needed)
+  // --- Communities (unchanged)
   const COMMUNITIES = [
     { name: "Brookfield",        url: "https://www.narrpr.com/reports-v2/97a381b7-10f7-40e6-9e36-852d9a194cdf/pdf" },
     { name: "Menomonee Falls",   url: "https://www.narrpr.com/reports-v2/e88b179b-2c39-4b51-9968-f4d8b6df89cb/pdf" },
@@ -310,94 +310,79 @@
     { name: "Sussex",            url: "https://www.narrpr.com/reports-v2/41f387a4-b092-42c4-b23a-b3575ae52116/pdf" }
   ];
 
-  // ---- Shortcuts
+  // --- Helpers
   const $=(q,el=document)=>el.querySelector(q);
 
-  // ---- Elements
+  // --- Elements
   const updatedAtEl=$("#updatedAt"), monthSelect=$("#monthSelect");
   const sfMonthEl=$("#sfMonth"), condoMonthEl=$("#condoMonth");
   const sfKpis=$("#sfKpis"), condoKpis=$("#condoKpis");
   const sfReport=$("#sfReport"), condoReport=$("#condoReport");
-  const sfNote=$("#sfNote"), condoNote=$("#condoNote");
   const searchInput=$("#searchInput"), communityGrid=$("#communityGrid");
 
-  // ---- Formatters
+  // --- Formatters
   const fCurrency=v=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0}).format(v);
   const fNumber=v=>new Intl.NumberFormat("en-US").format(v);
   const fNumber1=v=>new Intl.NumberFormat("en-US",{maximumFractionDigits:1}).format(v);
-  const delta=(cur,prev)=>{ if(prev==null || typeof cur!=="number") return {dir:null,pct:0}; const diff=cur-prev; const dir=diff===0?0:(diff>0?1:-1); return {dir,pct: prev===0?0:(diff/prev)*100}; };
 
-  // ---- KPI card
+  // --- KPI block (no MoM line if no previous month)
   function kpiEl(label, value, prev, type){
-  const el = document.createElement("div");
-  el.className = "kpi";
+    const el = document.createElement("div");
+    el.className = "kpi";
 
-  const hasValue = typeof value === "number" && !Number.isNaN(value);
-  const hasPrev  = typeof prev  === "number" && !Number.isNaN(prev);
+    const hasValue = typeof value === "number" && !Number.isNaN(value);
+    const hasPrev  = typeof prev  === "number" && !Number.isNaN(prev);
 
-  // format value
-  let formatted = "—";
-  if (hasValue) {
-    formatted = type === "currency" ? fCurrency(value)
-              : type === "number1" ? fNumber1(value)
-              : fNumber(value);
-  }
+    let formatted = "—";
+    if (hasValue) {
+      formatted = type === "currency" ? fCurrency(value)
+                : type === "number1" ? fNumber1(value)
+                : fNumber(value);
+    }
 
-  // build delta block only if we have a previous month to compare
-  let deltaBlock = "";
-  if (hasValue && hasPrev) {
-    const diff = value - prev;
-    const dir  = diff === 0 ? 0 : (diff > 0 ? 1 : -1);
-    const pct  = prev === 0 ? 0 : (diff / prev) * 100;
-    const arrow = dir === 0 ? "—" : (dir > 0 ? "▲" : "▼");
-    const cls   = dir === 0 ? "" : (dir > 0 ? "up" : "down");
-    deltaBlock = `<div class="delta ${cls}">${arrow} ${Math.abs(pct).toFixed(1)}% MoM</div>`;
-  }
-
-  el.innerHTML = `
-    <div class="label">${label}</div>
-    <div class="value">${formatted}</div>
-    ${deltaBlock}
-  `;
-  return el;
-}
-
-    const arrow = dir == null ? "" : dir === 0 ? "—" : (dir > 0 ? "▲" : "▼");
-    const cls   = dir == null ? "" : dir === 0 ? ""  : (dir > 0 ? "up" : "down");
-    const deltaHtml = dir == null
-      ? '<span class="muted">n/a</span>'
-      : `${arrow} ${Math.abs(pct).toFixed(1)}% MoM`;
+    let deltaBlock = "";
+    if (hasValue && hasPrev) {
+      const diff = value - prev;
+      const dir  = diff === 0 ? 0 : (diff > 0 ? 1 : -1);
+      const pct  = prev === 0 ? 0 : (diff / prev) * 100;
+      const arrow = dir === 0 ? "—" : (dir > 0 ? "▲" : "▼");
+      const cls   = dir === 0 ? "" : (dir > 0 ? "up" : "down");
+      deltaBlock = `<div class="delta ${cls}">${arrow} ${Math.abs(pct).toFixed(1)}% MoM</div>`;
+    }
 
     el.innerHTML = `
       <div class="label">${label}</div>
       <div class="value">${formatted}</div>
-      <div class="delta ${cls}">${deltaHtml}</div>
+      ${deltaBlock}
     `;
     return el;
   }
 
-  // ---- Render helpers
+  // --- Render current month
   function paintMonth(key, dataObj){
     const months=Object.keys(dataObj.months).sort();
     const idx=months.indexOf(key); const cur=dataObj.months[key]; const prev=dataObj.months[months[idx-1]];
     const [y,m]=key.split("-"); const label=new Date(+y, +m-1, 1).toLocaleDateString(undefined,{month:"long",year:"numeric"});
-    sfMonthEl.textContent=label; condoMonthEl.textContent=label;
-    sfKpis.innerHTML=""; condoKpis.innerHTML="";
+    if (sfMonthEl) sfMonthEl.textContent=label;
+    if (condoMonthEl) condoMonthEl.textContent=label;
+    if (sfKpis) sfKpis.innerHTML="";
+    if (condoKpis) condoKpis.innerHTML="";
 
     const METRICS = [
-  { key: "medianPrice",   label: "Median Price",   type: "currency" },
-  { key: "closed",        label: "Closed Sales",   type: "number"   },
-  { key: "dom",           label: "Days on Market", type: "number"   },
-  { key: "monthsSupply",  label: "Months Supply",  type: "number1"  },
-  { key: "activeListings",label: "Active Listings",type: "number"   }
-];
+      { key:"medianPrice",   label:"Median Price",   type:"currency" },
+      { key:"closed",        label:"Closed Sales",   type:"number"   },
+      { key:"dom",           label:"Days on Market", type:"number"   },
+      { key:"monthsSupply",  label:"Months Supply",  type:"number1"  },
+      { key:"activeListings",label:"Active Listings",type:"number"   }
+    ];
 
     METRICS.forEach(m=>{
-      sfKpis.appendChild(kpiEl(m.label, cur.sf?.[m.key],    prev?.sf?.[m.key],    m.type));
-      condoKpis.appendChild(kpiEl(m.label, cur.condo?.[m.key], prev?.condo?.[m.key], m.type));
+      if (sfKpis) sfKpis.appendChild(kpiEl(m.label, cur.sf?.[m.key],    prev?.sf?.[m.key],    m.type));
+      if (condoKpis) condoKpis.appendChild(kpiEl(m.label, cur.condo?.[m.key], prev?.condo?.[m.key], m.type));
     });
   }
 
+  // --- Communities list
   function renderCommunities(list){
     if (!communityGrid) return;
     communityGrid.innerHTML="";
@@ -410,25 +395,33 @@
     });
   }
 
+  // --- Main render
   function render(payload){
-    if (updatedAtEl) updatedAtEl.textContent = new Date(payload.updatedAt).toLocaleDateString();
+    if (updatedAtEl && payload.updatedAt) {
+      updatedAtEl.textContent = new Date(payload.updatedAt).toLocaleDateString();
+    }
 
     const months=Object.keys(payload.months).sort().reverse();
-    monthSelect.innerHTML="";
-    months.forEach(k=>{
-      const [y,m]=k.split("-"); const dt=new Date(+y,+m-1,1);
-      const opt=document.createElement("option"); opt.value=k; opt.textContent=dt.toLocaleDateString(undefined,{month:"long",year:"numeric"});
-      monthSelect.appendChild(opt);
-    });
-    monthSelect.value=months[0];
+    if (monthSelect) {
+      monthSelect.innerHTML="";
+      months.forEach(k=>{
+        const [y,m]=k.split("-"); const dt=new Date(+y,+m-1,1);
+        const opt=document.createElement("option");
+        opt.value=k;
+        opt.textContent=dt.toLocaleDateString(undefined,{month:"long",year:"numeric"});
+        monthSelect.appendChild(opt);
+      });
+      monthSelect.value=months[0];
+      monthSelect.onchange=e=>paintMonth(e.target.value, payload);
+    }
+
     paintMonth(months[0], payload);
-    monthSelect.onchange=e=>paintMonth(e.target.value, payload);
 
     if (sfReport && payload.months[months[0]]?.sfReport) sfReport.href = payload.months[months[0]].sfReport;
     if (condoReport && payload.months[months[0]]?.condoReport) condoReport.href = payload.months[months[0]].condoReport;
 
-    // communities + search
     renderCommunities(COMMUNITIES);
+
     if (searchInput) {
       searchInput.addEventListener("input", ()=>{
         const q=searchInput.value.trim().toLowerCase();
@@ -436,17 +429,14 @@
       });
     }
 
-    // fill print header “Updated …”
     const pu = $("#printUpdated");
-    if (pu && payload?.updatedAt) {
-      pu.textContent = "Updated " + new Date(payload.updatedAt).toLocaleDateString();
-    }
+    if (pu && payload?.updatedAt) pu.textContent = "Updated " + new Date(payload.updatedAt).toLocaleDateString();
 
-    // Print
     const btn = $("#printBtn");
     if (btn) btn.onclick=()=>window.print();
   }
 
+  // --- Boot
   async function boot(){
     try{
       // Optional embed mode
@@ -456,13 +446,12 @@
 
       const r=await fetch(ENDPOINT, { cache: "no-store" });
       if(!r.ok) throw new Error(`API ${r.status} ${r.statusText}`);
-      const json=await r.json(); // { updatedAt, months }
+      const json=await r.json();
       render(json);
     }catch(e){
       console.error(e);
-      const msg = `<div class="kpi"><div class="label">Status</div><div class="value" style="font-size:16px">Couldn’t load live stats</div><div class="delta" style="color:#b91c1c">${(e && e.message) ? e.message : String(e)}</div></div>`;
-      if (sfKpis) sfKpis.innerHTML = msg;
-      if (condoKpis) condoKpis.innerHTML = msg;
+      if (sfKpis) sfKpis.innerHTML = `<div class="kpi"><div class="label">Status</div><div class="value" style="font-size:16px">Couldn’t load live stats</div><div class="delta" style="color:#b91c1c">${(e && e.message) ? e.message : String(e)}</div></div>`;
+      if (condoKpis) condoKpis.innerHTML = sfKpis.innerHTML;
     }
   }
 
