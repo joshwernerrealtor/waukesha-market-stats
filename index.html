@@ -296,7 +296,7 @@
 (() => {
   const ENDPOINT = "/api/waukesha";
 
-  // --- Communities (unchanged)
+  // Communities
   const COMMUNITIES = [
     { name: "Brookfield",        url: "https://www.narrpr.com/reports-v2/97a381b7-10f7-40e6-9e36-852d9a194cdf/pdf" },
     { name: "Menomonee Falls",   url: "https://www.narrpr.com/reports-v2/e88b179b-2c39-4b51-9968-f4d8b6df89cb/pdf" },
@@ -310,30 +310,27 @@
     { name: "Sussex",            url: "https://www.narrpr.com/reports-v2/41f387a4-b092-42c4-b23a-b3575ae52116/pdf" }
   ];
 
-  // If this page is opened with ?print=1, auto-trigger print after load
-(function(){
+  // Params / iframe detection
   const params = new URLSearchParams(location.search);
-  if (params.get('print') === '1') {
-    window.addEventListener('load', () => setTimeout(() => window.print(), 300));
-  }
-})();
-  
-  // --- Helpers
+  const isEmbedded = (window.top !== window.self);
+  const shouldAutoPrint = params.get('print') === '1';
+
+  // Shortcuts
   const $=(q,el=document)=>el.querySelector(q);
 
-  // --- Elements
+  // Elements
   const updatedAtEl=$("#updatedAt"), monthSelect=$("#monthSelect");
   const sfMonthEl=$("#sfMonth"), condoMonthEl=$("#condoMonth");
   const sfKpis=$("#sfKpis"), condoKpis=$("#condoKpis");
   const sfReport=$("#sfReport"), condoReport=$("#condoReport");
   const searchInput=$("#searchInput"), communityGrid=$("#communityGrid");
 
-  // --- Formatters
+  // Formatters
   const fCurrency=v=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0}).format(v);
   const fNumber=v=>new Intl.NumberFormat("en-US").format(v);
   const fNumber1=v=>new Intl.NumberFormat("en-US",{maximumFractionDigits:1}).format(v);
 
-  // --- KPI block (no MoM line if no previous month)
+  // KPI (hide MoM if no previous month)
   function kpiEl(label, value, prev, type){
     const el = document.createElement("div");
     el.className = "kpi";
@@ -366,7 +363,6 @@
     return el;
   }
 
-  // --- Render current month
   function paintMonth(key, dataObj){
     const months=Object.keys(dataObj.months).sort();
     const idx=months.indexOf(key); const cur=dataObj.months[key]; const prev=dataObj.months[months[idx-1]];
@@ -390,7 +386,6 @@
     });
   }
 
-  // --- Communities list
   function renderCommunities(list){
     if (!communityGrid) return;
     communityGrid.innerHTML="";
@@ -403,7 +398,6 @@
     });
   }
 
-  // --- Main render
   function render(payload){
     if (updatedAtEl && payload.updatedAt) {
       updatedAtEl.textContent = new Date(payload.updatedAt).toLocaleDateString();
@@ -430,39 +424,35 @@
 
     renderCommunities(COMMUNITIES);
 
-    if (searchInput) {
-      searchInput.addEventListener("input", ()=>{
-        const q=searchInput.value.trim().toLowerCase();
-        renderCommunities(COMMUNITIES.filter(c=>c.name.toLowerCase().includes(q)));
-      });
-    }
-
+    // Print header date
     const pu = $("#printUpdated");
     if (pu && payload?.updatedAt) pu.textContent = "Updated " + new Date(payload.updatedAt).toLocaleDateString();
 
+    // Print button: iframe-safe
     const btn = $("#printBtn");
-if (btn) {
-  btn.onclick = () => {
-    const inIframe = (window.top !== window.self);
-    if (inIframe) {
-      // Open a clean, top-level tab that auto-prints
-      const url = new URL(location.href);
-      url.searchParams.set('print', '1'); // trigger auto-print
-      url.searchParams.delete('embed');   // ensure full header for print
-      window.open(url.toString(), '_blank', 'noopener');
-    } else {
-      window.print();
+    if (btn) {
+      btn.onclick = () => {
+        if (isEmbedded) {
+          const url = new URL(location.href);
+          url.searchParams.set('print','1'); // auto-print
+          url.searchParams.delete('embed');  // ensure print header shows
+          window.open(url.toString(), '_blank', 'noopener');
+        } else {
+          window.print();
+        }
+      };
     }
-  };
-}
 
-  // --- Boot
+    // Auto-print if opened with ?print=1
+    if (shouldAutoPrint) {
+      setTimeout(() => window.print(), 300);
+    }
+  }
+
   async function boot(){
     try{
-      // Optional embed mode
-      if (new URLSearchParams(location.search).get("embed") === "1") {
-        document.body.classList.add("embed");
-      }
+      // Optional embed mode chrome hide
+      if (params.get('embed') === '1') document.body.classList.add('embed');
 
       const r=await fetch(ENDPOINT, { cache: "no-store" });
       if(!r.ok) throw new Error(`API ${r.status} ${r.statusText}`);
@@ -470,8 +460,9 @@ if (btn) {
       render(json);
     }catch(e){
       console.error(e);
-      if (sfKpis) sfKpis.innerHTML = `<div class="kpi"><div class="label">Status</div><div class="value" style="font-size:16px">Couldn’t load live stats</div><div class="delta" style="color:#b91c1c">${(e && e.message) ? e.message : String(e)}</div></div>`;
-      if (condoKpis) condoKpis.innerHTML = sfKpis.innerHTML;
+      const err = `<div class="kpi"><div class="label">Status</div><div class="value" style="font-size:16px">Couldn’t load live stats</div><div class="delta" style="color:#b91c1c">${(e && e.message) ? e.message : String(e)}</div></div>`;
+      if (sfKpis) sfKpis.innerHTML = err;
+      if (condoKpis) condoKpis.innerHTML = err;
     }
   }
 
