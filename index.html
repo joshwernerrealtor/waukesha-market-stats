@@ -386,6 +386,7 @@ body  { background: var(--bg); }
 {
   "@context":"https://schema.org",
   "@type":"Dataset",
+  "@id":"https://waukesha-market-stats.vercel.app/#dataset",
   "name":"Waukesha County Housing Market Statistics",
   "description":"Monthly market stats for Waukesha County, WI (Single-Family & Condo): Median Price, Closed Sales, Days on Market, and Months Supply. Auto-updated from RPR.",
   "creator":{"@type":"Person","name":"Josh Werner"},
@@ -399,6 +400,61 @@ body  { background: var(--bg); }
   ],
   "dateModified":"2025-09-16"
 }
+</script>
+
+<script id="ld-agent" type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"RealEstateAgent",
+  "@id":"https://joshwerner.homes/#agent",
+  "name":"Josh Werner",
+  "url":"https://joshwerner.homes",
+  "image":"https://waukesha-market-stats.vercel.app/logo.png",
+  "telephone":"+1-414-759-7925",
+  "email":"joshwernerrealtor@gmail.com",
+  "address":{ "@type":"PostalAddress", "addressLocality":"Waukesha County", "addressRegion":"WI", "addressCountry":"US" },
+  "areaServed": { "@type":"AdministrativeArea", "name":"Waukesha County, Wisconsin" },
+  "parentOrganization":{ "@type":"Organization", "name":"Realty ONE Group Luminous" },
+  "sameAs":[ "https://instacard.co/Josh-Werner" ]
+}
+</script>
+
+<script id="ld-webpage" type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"WebPage",
+  "@id":"https://waukesha-market-stats.vercel.app/#webpage",
+  "name":"Waukesha County Housing Market Statistics",
+  "url":"https://waukesha-market-stats.vercel.app/",
+  "inLanguage":"en-US",
+  "description":"Waukesha County housing market statistics updated daily: median price, closed sales, days on market, and months of supply for single-family homes and condos.",
+  "isPartOf":{
+    "@type":"WebSite",
+    "name":"Josh Werner Real Estate",
+    "url":"https://joshwerner.homes"
+  },
+  "primaryImageOfPage": {
+    "@type":"ImageObject",
+    "url":"https://waukesha-market-stats.vercel.app/og-image.png"
+  },
+  "mainEntity": { "@id":"https://waukesha-market-stats.vercel.app/#dataset" },
+  "dateModified":"2025-09-16"
+}
+</script>
+  <script>
+  (async () => {
+    try {
+      const r = await fetch("/api/waukesha", { cache: "no-store" });
+      const j = await r.json();
+      if (!j?.updatedAt) return;
+
+      const ds = document.getElementById("ld-dataset");
+      if (ds) { const d = JSON.parse(ds.textContent); d.dateModified = j.updatedAt; ds.textContent = JSON.stringify(d); }
+
+      const wp = document.getElementById("ld-webpage");
+      if (wp) { const w = JSON.parse(wp.textContent); w.dateModified = j.updatedAt; wp.textContent = JSON.stringify(w); }
+    } catch {}
+  })();
 </script>
 </head>
 <body>
