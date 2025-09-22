@@ -4,9 +4,10 @@
 const SF_PDF_URL =
   "https://www.narrpr.com/reports-v2/c296fac6-035d-4e9a-84fd-28455ab0339f/pdf";
 
-// ⬇️ When you have your Condo/Townhome dynamic link, paste it here.
-// Leave as "" (empty string) for now; the API will mirror SF into Condo.
-const CONDO_PDF_URL = "https://www.narrpr.com/reports-v2/5a675486-5c7b-4bb0-9946-0cffa3070f05/pdf";
+// When you have a Condo/Townhome dynamic link, paste it here.
+// If empty, condo will mirror SF.
+const CONDO_PDF_URL =
+  "https://www.narrpr.com/reports-v2/5a675486-5c7b-4bb0-9946-0cffa3070f05/pdf";
 
 // ---------- helpers ----------
 function monthKeyFrom(text) {
@@ -109,9 +110,7 @@ function parseMetrics(text) {
     return m?.[1] ? Number(m[1].replace(/,/g, "")) : null;
   })();
 
-  // Month key
   const monthKey = monthKeyFrom(text);
-
   return { medianPrice, closed, dom, monthsSupply, activeListings, monthKey };
 }
 
@@ -122,11 +121,11 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
 
   try {
-    // Parse SF
+    // 1) Parse SF
     const sfText = await fetchTextFromPdf(SF_PDF_URL);
     const sf = parseMetrics(sfText);
 
-    // Parse Condo if a URL is set; otherwise mirror SF
+    // 2) Parse Condo if set; otherwise mirror SF
     let condo = sf;
     let condoReportUrl = SF_PDF_URL;
     if (CONDO_PDF_URL && CONDO_PDF_URL.trim()) {
@@ -135,12 +134,11 @@ export default async function handler(req, res) {
         condo = parseMetrics(condoText);
         condoReportUrl = CONDO_PDF_URL.trim();
       } catch (e) {
-        // If condo parse fails, keep mirroring SF but note the error.
         console.warn("Condo parse failed:", e?.message || e);
       }
     }
 
-    // Require core SF metrics
+    // 3) Require core SF metrics
     if ([sf.medianPrice, sf.closed, sf.dom, sf.monthsSupply].some(v => v == null)) {
       return res.status(422).json({
         error: "Parser needs tuning for SF: missing one or more metrics.",
@@ -148,6 +146,7 @@ export default async function handler(req, res) {
       });
     }
 
+    // 4) Build payload
     const monthKey = sf.monthKey;
     const payload = {
       updatedAt: new Date().toISOString().slice(0, 10),
@@ -175,28 +174,28 @@ export default async function handler(req, res) {
       }
     };
 
-res.setHeader("Cache-Control", "s-maxage=82800, stale-while-revalidate=3600");
+    // 5) Cache at the edge
+    res.setHeader("Cache-Control", "s-maxage=82800, stale-while-revalidate=3600");
 
-// Ping search engines ONLY on scheduled cron runs
-if (req.headers["x-vercel-cron"]) {
-  try {
-    const origin = `${req.headers["x-forwarded-proto"] || "https"}://${req.headers.host}`;
-    const sm = encodeURIComponent(`${origin}/sitemap.xml`);
+    // 6) Ping search engines ONLY on scheduled cron runs
+    if (req.headers["x-vercel-cron"]) {
+      try {
+        const origin = `${req.headers["x-forwarded-proto"] || "https"}://${req.headers.host}`;
+        const sm = encodeURIComponent(`${origin}/sitemap.xml`);
+        const ping = Promise.allSettled([
+          fetch(`https://www.google.com/ping?sitemap=${sm}`),
+          fetch(`https://www.bing.com/ping?sitemap=${sm}`)
+        ]);
+        // Give the pings a moment without slowing the function much
+        await Promise.race([ping, new Promise(r => setTimeout(r, 1000))]);
+      } catch {
+        /* ignore ping failures */
+      }
+    }
 
-    // Give the requests a tiny moment to actually leave the process
-    const ping = Promise.allSettled([
-      fetch(`https://www.google.com/ping?sitemap=${sm}`),
-      fetch(`https://www.bing.com/ping?sitemap=${sm}`)
-    ]);
-
-    // Wait up to ~1s so serverless doesn't kill them immediately
-    await Promise.race([
-      ping,
-      new Promise(resolve => setTimeout(resolve, 1000))
-    ]);
-  } catch {
-    /* ignore ping failures */
+    // 7) Respond
+    return res.status(200).json(payload);
+  } catch (e) {
+    return res.status(500).json({ error: String(e?.message || e) });
   }
 }
-
-res.status(200).json(payload);
