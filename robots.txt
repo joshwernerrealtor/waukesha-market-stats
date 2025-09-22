@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://waukesha-market-stats.vercel.app/sitemap.xml
