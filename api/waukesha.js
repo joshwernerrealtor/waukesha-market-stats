@@ -175,9 +175,28 @@ export default async function handler(req, res) {
       }
     };
 
-    res.setHeader("Cache-Control", "s-maxage=82800, stale-while-revalidate=3600");
-    res.status(200).json(payload);
-  } catch (e) {
-    res.status(500).json({ error: String(e?.message || e) });
+res.setHeader("Cache-Control", "s-maxage=82800, stale-while-revalidate=3600");
+
+// Ping search engines ONLY on scheduled cron runs
+if (req.headers["x-vercel-cron"]) {
+  try {
+    const origin = `${req.headers["x-forwarded-proto"] || "https"}://${req.headers.host}`;
+    const sm = encodeURIComponent(`${origin}/sitemap.xml`);
+
+    // Give the requests a tiny moment to actually leave the process
+    const ping = Promise.allSettled([
+      fetch(`https://www.google.com/ping?sitemap=${sm}`),
+      fetch(`https://www.bing.com/ping?sitemap=${sm}`)
+    ]);
+
+    // Wait up to ~1s so serverless doesn't kill them immediately
+    await Promise.race([
+      ping,
+      new Promise(resolve => setTimeout(resolve, 1000))
+    ]);
+  } catch {
+    /* ignore ping failures */
   }
 }
+
+res.status(200).json(payload);
