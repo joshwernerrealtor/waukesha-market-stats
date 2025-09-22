@@ -504,6 +504,54 @@ body  { background: var(--bg); }
   ]
 }
 </script>
+<script id="ld-faq" type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "How often are these stats updated?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The page refreshes when RPR regenerates the PDFs (typically ~48 hours). The numbers here update automatically from those reports."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What property types are included?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Side-by-side snapshots for Single-Family homes and Condos/Townhomes in Waukesha County."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does “Months of Supply” mean?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Months of Supply estimates how long it would take to sell current inventory at the recent sales pace. Lower values indicate a stronger seller’s market."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I see stats for my specific city or neighborhood?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes—use the Top 10 community links. If your area isn’t listed, I can run a custom report for your city or neighborhood."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can you help me interpret these numbers?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. I’ll walk you through trends, pricing, and timing for your goals and property type."
+      }
+    }
+  ]
+}
+</script>
 <!-- Keep meta dates in sync with API.updatedAt -->
 <meta id="meta-lastmod" name="last-modified" content="2025-09-16" />
 <meta id="og-updated" property="og:updated_time" content="2025-09-16T12:00:00Z" />
@@ -679,6 +727,25 @@ body  { background: var(--bg); }
     <li><a class="link" href="#"       >Mukwonago Market Guide</a></li>
     <li><a class="link" href="#"       >Sussex Market Guide</a></li>
   </ul>
+</section>
+<section id="faq" class="card" style="margin-top:16px">
+  <h2 style="margin:0 0 8px 0; font-size:18px">Waukesha County Market — FAQs</h2>
+  <div class="subtitle" style="margin:6px 0 12px 0">Quick answers about the stats on this page.</div>
+  <details style="margin:8px 0"><summary><strong>How often are these stats updated?</strong></summary>
+    <p>The county numbers refresh when RPR regenerates the reports (typically every ~48 hours). This page checks the PDF and updates automatically.</p>
+  </details>
+  <details style="margin:8px 0"><summary><strong>What property types are included?</strong></summary>
+    <p>We show side-by-side snapshots for Single-Family homes and Condos/Townhomes.</p>
+  </details>
+  <details style="margin:8px 0"><summary><strong>What does “Months of Supply” mean?</strong></summary>
+    <p>Months of Supply estimates how long it would take to sell current inventory at the recent sales pace. Lower values indicate a stronger seller’s market.</p>
+  </details>
+  <details style="margin:8px 0"><summary><strong>Can I see stats for my specific city or neighborhood?</strong></summary>
+    <p>Yes—use the “Top 10 Communities” links above. If you don’t see your area, reach out and I can run a custom report.</p>
+  </details>
+  <details style="margin:8px 0"><summary><strong>Can you help me interpret these numbers?</strong></summary>
+    <p>Absolutely. I’ll walk you through trends, pricing, and timing for your goals.</p>
+  </details>
 </section>
   </main>
 
