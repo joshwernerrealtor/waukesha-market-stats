@@ -465,45 +465,6 @@ body  { background: var(--bg); }
   "mainEntity": { "@id":"https://waukesha-market-stats.vercel.app/#dataset" },
   "dateModified":"2025-09-16"
 }
-</script>
-  <script id="ld-faq" type="application/ld+json">
-{
-  "@context":"https://schema.org",
-  "@type":"FAQPage",
-  "mainEntity":[
-    {
-      "@type":"Question",
-      "name":"How often are these Waukesha County stats updated?",
-      "acceptedAnswer":{"@type":"Answer","text":"This page checks for new data every day around 6:00 AM Central (11:00 UTC). Figures refresh shortly after RPR regenerates its county Market Trends reports (typically every ~48 hours). The “Updated” date shows the last successful pull."}
-    },
-    {
-      "@type":"Question",
-      "name":"Where do these numbers come from?",
-      "acceptedAnswer":{"@type":"Answer","text":"Realtors Property Resource® (RPR) county Market Trends PDFs. Links to the full reports are provided on this page."}
-    },
-    {
-      "@type":"Question",
-      "name":"Which metrics are shown?",
-      "acceptedAnswer":{"@type":"Answer","text":"Median Sold Price, Closed Sales, Median Days in RPR (Days on Market), Months of Inventory, and Active Listings (when available)."}
-    },
-    {
-      "@type":"Question",
-      "name":"Does this include both single-family and condos?",
-      "acceptedAnswer":{"@type":"Answer","text":"Yes—two side-by-side snapshots. Each links to the corresponding county PDF report for deeper detail."}
-    },
-    {
-      "@type":"Question",
-      "name":"Can I print this as a one-page handout?",
-      "acceptedAnswer":{"@type":"Answer","text":"Yes—use the “Print / PDF” button. The Communities section is hidden on paper to keep the printout to one page."}
-    },
-    {
-      "@type":"Question",
-      "name":"How can I get stats for my neighborhood or a custom report?",
-      "acceptedAnswer":{"@type":"Answer","text":"Use the community links above or contact Josh at (414) 759-7925 or joshwernerrealtor@gmail.com for a custom report."}
-    }
-  ]
-}
-</script>
 <script id="ld-faq" type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -514,7 +475,7 @@ body  { background: var(--bg); }
       "name": "How often are these stats updated?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "The page refreshes when RPR regenerates the PDFs (typically ~48 hours). The numbers here update automatically from those reports."
+        "text": "County stats refresh automatically within ~48 hours of RPR updating the underlying PDFs. Community links open live RPR reports that always show the latest version."
       }
     },
     {
@@ -522,31 +483,23 @@ body  { background: var(--bg); }
       "name": "What property types are included?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Side-by-side snapshots for Single-Family homes and Condos/Townhomes in Waukesha County."
+        "text": "We publish snapshots for Single-Family homes and Condos/Townhomes. Each panel shows Median Price, Closed Sales, Days on Market, and Months of Supply."
       }
     },
     {
       "@type": "Question",
-      "name": "What does “Months of Supply” mean?",
+      "name": "Where do these numbers come from?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Months of Supply estimates how long it would take to sell current inventory at the recent sales pace. Lower values indicate a stronger seller’s market."
+        "text": "Realtors Property Resource® (RPR). The county panels summarize key figures extracted from the Waukesha County RPR PDF; community links point to each city’s live RPR report."
       }
     },
     {
       "@type": "Question",
-      "name": "Can I see stats for my specific city or neighborhood?",
+      "name": "Can I get a custom city or neighborhood report?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes—use the Top 10 community links. If your area isn’t listed, I can run a custom report for your city or neighborhood."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Can you help me interpret these numbers?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Yes. I’ll walk you through trends, pricing, and timing for your goals and property type."
+        "text": "Yes—contact Josh and we’ll generate a tailored RPR report with recent comps and trends."
       }
     }
   ]
@@ -748,7 +701,40 @@ body  { background: var(--bg); }
   </details>
 </section>
   </main>
+<section id="faq" class="card" aria-labelledby="faqTitle" style="margin-top:16px">
+  <h3 id="faqTitle" style="margin:0 0 8px 0; font-size:18px">Waukesha Market — FAQ</h3>
 
+  <details open>
+    <summary><strong>How often are these stats updated?</strong></summary>
+    <div style="margin:8px 0 0 0">
+      County stats refresh automatically within ~48 hours of RPR updating the underlying PDFs.
+      Community links open live RPR reports that always show the latest version.
+    </div>
+  </details>
+
+  <details>
+    <summary><strong>What property types are included?</strong></summary>
+    <div style="margin:8px 0 0 0">
+      We publish snapshots for Single-Family homes and Condos/Townhomes. Each panel shows Median Price,
+      Closed Sales, Days on Market, and Months of Supply.
+    </div>
+  </details>
+
+  <details>
+    <summary><strong>Where do these numbers come from?</strong></summary>
+    <div style="margin:8px 0 0 0">
+      Realtors Property Resource® (RPR). The county panels summarize key figures extracted from the
+      Waukesha County RPR PDF; community links point to each city’s live RPR report.
+    </div>
+  </details>
+
+  <details>
+    <summary><strong>Can I get a custom city or neighborhood report?</strong></summary>
+    <div style="margin:8px 0 0 0">
+      Yes—contact Josh and we’ll generate a tailored RPR report with recent comps and trends.
+    </div>
+  </details>
+</section>
   <footer class="container" style="opacity:.9;padding-top:0">
     <p style="font-size:12px;color:var(--muted)">Source: Realtors Property Resource® (RPR). County stats auto-refresh from the county PDF via a secure API.</p>
   </footer>
