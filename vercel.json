@@ -4,3 +4,11 @@
     "schedule": "0 11 * * *"
   }]
 }
+{
+  "crons": [
+    { "path": "/api/waukesha", "schedule": "0 11 * * *" }
+  ],
+  "rewrites": [
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" }
+  ]
+}
