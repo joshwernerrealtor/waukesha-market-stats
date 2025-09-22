@@ -442,6 +442,7 @@ body  { background: var(--bg); }
 }
 </script>
   <script>
+  // Sync JSON-LD dateModified with API.updatedAt (Dataset + WebPage)
   (async () => {
     try {
       const r = await fetch("/api/waukesha", { cache: "no-store" });
@@ -449,10 +450,18 @@ body  { background: var(--bg); }
       if (!j?.updatedAt) return;
 
       const ds = document.getElementById("ld-dataset");
-      if (ds) { const d = JSON.parse(ds.textContent); d.dateModified = j.updatedAt; ds.textContent = JSON.stringify(d); }
+      if (ds) {
+        const d = JSON.parse(ds.textContent);
+        d.dateModified = j.updatedAt;
+        ds.textContent = JSON.stringify(d);
+      }
 
       const wp = document.getElementById("ld-webpage");
-      if (wp) { const w = JSON.parse(wp.textContent); w.dateModified = j.updatedAt; wp.textContent = JSON.stringify(w); }
+      if (wp) {
+        const w = JSON.parse(wp.textContent);
+        w.dateModified = j.updatedAt;
+        wp.textContent = JSON.stringify(w);
+      }
     } catch {}
   })();
 </script>
