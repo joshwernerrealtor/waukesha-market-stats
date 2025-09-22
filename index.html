@@ -504,27 +504,36 @@ body  { background: var(--bg); }
   ]
 }
 </script>
-  <script>
-  // Sync JSON-LD dateModified with API.updatedAt (Dataset + WebPage)
+<!-- Keep meta dates in sync with API.updatedAt -->
+<meta id="meta-lastmod" name="last-modified" content="2025-09-16" />
+<meta id="og-updated" property="og:updated_time" content="2025-09-16T12:00:00Z" />
+
+<script>
+  // Sync JSON-LD (Dataset + WebPage) and meta dates with API.updatedAt
   (async () => {
     try {
       const r = await fetch("/api/waukesha?ts=" + Date.now(), { cache: "no-store" });
       const j = await r.json();
-      if (!j?.updatedAt) return;
+      const d = j?.updatedAt;
+      if (!d) return;
 
+      // Update JSON-LD dates
       const ds = document.getElementById("ld-dataset");
       if (ds) {
-        const d = JSON.parse(ds.textContent);
-        d.dateModified = j.updatedAt;
-        ds.textContent = JSON.stringify(d);
+        const data = JSON.parse(ds.textContent || "{}");
+        data.dateModified = d;
+        ds.textContent = JSON.stringify(data);
       }
-
       const wp = document.getElementById("ld-webpage");
       if (wp) {
-        const w = JSON.parse(wp.textContent);
-        w.dateModified = j.updatedAt;
+        const w = JSON.parse(wp.textContent || "{}");
+        w.dateModified = d;
         wp.textContent = JSON.stringify(w);
       }
+
+      // Update meta dates (anchor OG time at noon UTC to avoid TZ drift)
+      document.getElementById("meta-lastmod")?.setAttribute("content", d);
+      document.getElementById("og-updated")?.setAttribute("content", d + "T12:00:00Z");
     } catch {}
   })();
 </script>
