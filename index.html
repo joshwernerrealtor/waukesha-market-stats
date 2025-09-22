@@ -363,6 +363,31 @@ body  { background: var(--bg); }
   }
   .print-updated { margin-top: 2px; font-size: 11px; color: #6b7280; }
 }
+  /* --- FAQ styling --- */
+#faq .faq-item{
+  border:1px solid #e9e5d6;
+  border-radius:12px;
+  background:#fff;
+  margin-top:8px;
+  overflow:hidden;
+}
+#faq summary{
+  cursor:pointer;
+  padding:12px 14px;
+  list-style:none;
+  font-weight:600;
+  display:flex; align-items:center; justify-content:space-between;
+}
+#faq summary::-webkit-details-marker{ display:none; }
+#faq summary::after{
+  content:"▸";
+  margin-left:10px;
+  transition: transform .15s ease;
+  color: var(--brand-700);
+}
+#faq .faq-item[open] summary::after{ transform: rotate(90deg); }
+#faq .answer{ padding:0 14px 14px; color:var(--muted); }
+@media print{ #faq{ display:none !important; } } /* keep the printout to one page */
 </style>
 <!-- SEO / Social -->
 <link rel="canonical" href="https://waukesha-market-stats.vercel.app/" />
@@ -543,6 +568,53 @@ body  { background: var(--bg); }
       </div>
       <div id="communityGrid" class="community-grid" style="margin-top:12px"></div>
     </section>
+    <section id="faq" class="card" style="margin-top:16px">
+  <h2 style="margin:0 0 8px 0; font-size:18px">Market FAQs</h2>
+
+  <details class="faq-item" open>
+    <summary>How often are these Waukesha County stats updated?</summary>
+    <div class="answer">
+      This page checks for new data every day around 6:00 AM Central (11:00 UTC). Figures refresh shortly after
+      RPR regenerates its county Market Trends reports (typically every ~48 hours). The “Updated” date shows the
+      last successful pull.
+    </div>
+  </details>
+
+  <details class="faq-item">
+    <summary>Where do these numbers come from?</summary>
+    <div class="answer">
+      Realtors Property Resource® (RPR) county Market Trends PDFs. Links to the full reports are provided on this page.
+    </div>
+  </details>
+
+  <details class="faq-item">
+    <summary>Which metrics are shown?</summary>
+    <div class="answer">
+      Median Sold Price, Closed Sales, Median Days in RPR (Days on Market), Months of Inventory, and Active Listings (when available).
+    </div>
+  </details>
+
+  <details class="faq-item">
+    <summary>Does this include both single-family and condos?</summary>
+    <div class="answer">
+      Yes—two side-by-side snapshots. Each links to the corresponding county PDF report for deeper detail.
+    </div>
+  </details>
+
+  <details class="faq-item">
+    <summary>Can I print this as a one-page handout?</summary>
+    <div class="answer">
+      Yes—use the “Print / PDF” button. The Communities section is hidden on paper to keep the printout to one page.
+    </div>
+  </details>
+
+  <details class="faq-item">
+    <summary>How can I get stats for my neighborhood or a custom report?</summary>
+    <div class="answer">
+      Use the community links above or contact Josh at (414) 759-7925 or joshwernerrealtor@gmail.com for a custom report.
+    </div>
+  </details>
+</section>
   </main>
 
   <footer class="container" style="opacity:.9;padding-top:0">
