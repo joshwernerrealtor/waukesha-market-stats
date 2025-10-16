@@ -599,6 +599,22 @@ body  { background: var(--bg); }
   </header>
 
   <main class="container">
+    <section id="rates" class="card" aria-labelledby="ratesTitle">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+    <h2 id="ratesTitle" style="margin:0;font-size:20px">Today’s Local Mortgage Rates</h2>
+    <span class="badge"><span id="ratesUpdated">Loading…</span></span>
+  </div>
+
+  <div id="ratesBody" class="rates-list" style="margin-top:10px">
+    <div class="skel" style="height:38px"></div>
+    <div class="skel" style="height:38px"></div>
+    <div class="skel" style="height:38px"></div>
+  </div>
+
+  <p class="muted" style="margin-top:10px;font-size:12px">
+    Indicative rates published on lender sites; subject to change. Not a commitment to lend.
+  </p>
+</section>
     <section class="grid-2">
       <article id="sf" class="card" aria-labelledby="sfTitle">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
@@ -624,22 +640,6 @@ body  { background: var(--bg); }
         </div>
       </article>
     </section>
-<section id="rates" class="card" aria-labelledby="ratesTitle">
-  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-    <h2 id="ratesTitle" style="margin:0;font-size:20px">Today’s Local Mortgage Rates</h2>
-    <span class="badge"><span id="ratesUpdated">Loading…</span></span>
-  </div>
-
-  <div id="ratesBody" class="rates-list" style="margin-top:10px">
-    <div class="skel" style="height:38px"></div>
-    <div class="skel" style="height:38px"></div>
-    <div class="skel" style="height:38px"></div>
-  </div>
-
-  <p class="muted" style="margin-top:10px;font-size:12px">
-    Indicative rates published on lender sites; subject to change. Not a commitment to lend.
-  </p>
-</section>
 
     <section id="communities" class="card" style="margin-top:16px">
       <div style="display:flex;align-items:end;justify-content:space-between;gap:12px;flex-wrap:wrap">
