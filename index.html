@@ -323,6 +323,22 @@ body  { background: var(--bg); }
 .embed .hero{ padding:12px 14px; }
 .embed .subnav{ margin-top:6px; }
 .embed .foot{ margin-top:10px; }
+/* --- Rates list styles --- */
+.rates-list{ display:grid; gap:8px; }
+.rate-row{
+  display:flex; align-items:center; justify-content:space-between;
+  border:1px solid #eef0f3; border-radius:12px; padding:10px 12px; background:#fff;
+}
+.rate-row h4{ margin:0; font-size:14px; font-weight:700; }
+.rate-row small{ color:var(--muted); }
+.rate-tags{ display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+.tag{ font:12px/1 system-ui; background:var(--brand-50); border:1px solid var(--brand-200); border-radius:999px; padding:2px 8px; }
+.rate-nums{ text-align:right; min-width:160px; }
+.rate-nums .num{ font-weight:800; }
+.rate-nums .sub{ font-size:12px; color:var(--muted); }
+
+/* Keep one-page printouts tidy */
+@media print{ #rates{ display:none !important; } }
   </style>
 <style>
 /* ---------- Print styles ---------- */
@@ -608,6 +624,22 @@ body  { background: var(--bg); }
         </div>
       </article>
     </section>
+<section id="rates" class="card" aria-labelledby="ratesTitle">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+    <h2 id="ratesTitle" style="margin:0;font-size:20px">Today’s Local Mortgage Rates</h2>
+    <span class="badge"><span id="ratesUpdated">Loading…</span></span>
+  </div>
+
+  <div id="ratesBody" class="rates-list" style="margin-top:10px">
+    <div class="skel" style="height:38px"></div>
+    <div class="skel" style="height:38px"></div>
+    <div class="skel" style="height:38px"></div>
+  </div>
+
+  <p class="muted" style="margin-top:10px;font-size:12px">
+    Indicative rates published on lender sites; subject to change. Not a commitment to lend.
+  </p>
+</section>
 
     <section id="communities" class="card" style="margin-top:16px">
       <div style="display:flex;align-items:end;justify-content:space-between;gap:12px;flex-wrap:wrap">
@@ -890,6 +922,63 @@ body  { background: var(--bg); }
 
   document.addEventListener("DOMContentLoaded", boot);
 })();
+</script>
+<script>
+async function bootRates(){
+  const updatedEl = document.getElementById('ratesUpdated');
+  const body = document.getElementById('ratesBody');
+  if(!updatedEl || !body) return;
+
+  try{
+    const r = await fetch('/api/rates?ts=' + Date.now(), { cache: 'no-store' });
+    if(!r.ok) throw new Error('Bad response');
+    const j = await r.json();
+
+    // Updated timestamp
+    updatedEl.textContent = new Date(j.updatedAt).toLocaleDateString();
+
+    // Clear skeletons
+    body.innerHTML = '';
+
+    j.lenders.forEach(l => {
+      if(!l.products || !l.products.length) return;
+
+      // Prefer 30-year fixed if present
+      const thirty = l.products.find(p => /30/.test(p.term)) || l.products[0];
+      const otherTags = l.products
+        .filter(p => p !== thirty)
+        .slice(0, 3)
+        .map(p => {
+          const rate = (p.rate != null) ? p.rate.toFixed(3) + '%' : '';
+          const apr  = (p.apr  != null) ? ' APR ' + p.apr.toFixed(3) + '%' : '';
+          return `${p.term}: ${rate}${apr}`;
+        });
+
+      const row = document.createElement('div');
+      row.className = 'rate-row';
+      row.innerHTML = `
+        <div>
+          <h4>${l.name}</h4>
+          <small><a class="link" href="${l.url}" target="_blank" rel="noopener">View lender</a></small>
+          ${otherTags.length ? `<div class="rate-tags">${otherTags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>` : ``}
+        </div>
+        <div class="rate-nums">
+          ${thirty?.rate != null ? `<div class="num">${thirty.rate.toFixed(3)}% <span class="muted">rate</span></div>` : `<div class="muted">—</div>`}
+          ${thirty?.apr  != null ? `<div class="sub">APR ${thirty.apr.toFixed(3)}%${thirty.points != null ? ` · ${thirty.points} pts` : ''}</div>` : ``}
+        </div>
+      `;
+      body.appendChild(row);
+    });
+
+    if(!body.children.length){
+      body.innerHTML = `<div class="muted">No rates were available just now. Try again later.</div>`;
+    }
+  }catch(e){
+    updatedEl.textContent = '—';
+    body.innerHTML = `<div class="muted">Couldn’t load rate data.</div>`;
+  }
+}
+document.addEventListener('DOMContentLoaded', bootRates);
 </script>
 </body>
 </html>
