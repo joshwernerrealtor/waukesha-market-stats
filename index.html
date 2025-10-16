@@ -924,61 +924,53 @@ body  { background: var(--bg); }
 })();
 </script>
 <script>
-async function bootRates(){
-  const updatedEl = document.getElementById('ratesUpdated');
-  const body = document.getElementById('ratesBody');
-  if(!updatedEl || !body) return;
+// --- Simple client-side rates renderer: always show all lenders, then hydrate if fetch works ---
+const LENDERS = [
+  { id: "landmark",   name: "Landmark Credit Union",            url: "https://landmarkcu.com/mortgage-rates" },
+  { id: "guaranteed", name: "Guaranteed Rate",                   url: "https://www.rate.com/mortgage-rates" },
+  { id: "fairway",    name: "Fairway Independent Mortgage",      url: "https://www.fairwayindependentmc.com/mortgage-rates" }
+];
 
-  try{
-    const r = await fetch('/api/rates?ts=' + Date.now(), { cache: 'no-store' });
-    if(!r.ok) throw new Error('Bad response');
-    const j = await r.json();
+function makeRateCard({ id, name, url }) {
+  const card = document.createElement("article");
+  card.className = "community-card";
+  card.id = `rate-${id}`;
+  card.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <strong>${name}</strong>
+      <span class="muted" id="rate-line-${id}">Loading latest quote…</span>
+    </div>
+    <a class="link" href="${url}" target="_blank" rel="noopener" aria-label="Open ${name} rates">View</a>
+  `;
+  return card;
+}
 
-    // Updated timestamp
-    updatedEl.textContent = new Date(j.updatedAt).toLocaleDateString();
+(function mountRateCards(){
+  const wrap = document.getElementById("rates-list");
+  if (!wrap) return;
+  wrap.innerHTML = "";
+  LENDERS.forEach(l => wrap.appendChild(makeRateCard(l)));
+})();
 
-    // Clear skeletons
-    body.innerHTML = '';
-
-    j.lenders.forEach(l => {
-      if(!l.products || !l.products.length) return;
-
-      // Prefer 30-year fixed if present
-      const thirty = l.products.find(p => /30/.test(p.term)) || l.products[0];
-      const otherTags = l.products
-        .filter(p => p !== thirty)
-        .slice(0, 3)
-        .map(p => {
-          const rate = (p.rate != null) ? p.rate.toFixed(3) + '%' : '';
-          const apr  = (p.apr  != null) ? ' APR ' + p.apr.toFixed(3) + '%' : '';
-          return `${p.term}: ${rate}${apr}`;
-        });
-
-      const row = document.createElement('div');
-      row.className = 'rate-row';
-      row.innerHTML = `
-        <div>
-          <h4>${l.name}</h4>
-          <small><a class="link" href="${l.url}" target="_blank" rel="noopener">View lender</a></small>
-          ${otherTags.length ? `<div class="rate-tags">${otherTags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>` : ``}
-        </div>
-        <div class="rate-nums">
-          ${thirty?.rate != null ? `<div class="num">${thirty.rate.toFixed(3)}% <span class="muted">rate</span></div>` : `<div class="muted">—</div>`}
-          ${thirty?.apr  != null ? `<div class="sub">APR ${thirty.apr.toFixed(3)}%${thirty.points != null ? ` · ${thirty.points} pts` : ''}</div>` : ``}
-        </div>
-      `;
-      body.appendChild(row);
-    });
-
-    if(!body.children.length){
-      body.innerHTML = `<div class="muted">No rates were available just now. Try again later.</div>`;
+async function hydrateRates(){
+  for (const l of LENDERS) {
+    try {
+      const r = await fetch(l.url, { mode: "no-cors" }); // likely opaque due to CORS
+      const line = document.getElementById(`rate-line-${l.id}`);
+      if (!r || r.type === "opaque") {
+        if (line) line.textContent = "Live quote not available from source (click to view).";
+        continue;
+      }
+      const html = await r.text();
+      const rate = null; // add real parsing later
+      if (line) line.textContent = rate ? `30-yr: ${rate}` : "Live quote fetched — parsing needed (click for details).";
+    } catch {
+      const line = document.getElementById(`rate-line-${l.id}`);
+      if (line) line.textContent = "Couldn’t fetch live quote (source blocking).";
     }
-  }catch(e){
-    updatedEl.textContent = '—';
-    body.innerHTML = `<div class="muted">Couldn’t load rate data.</div>`;
   }
 }
-document.addEventListener('DOMContentLoaded', bootRates);
+hydrateRates();
 </script>
 </body>
 </html>
