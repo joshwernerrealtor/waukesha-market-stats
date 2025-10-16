@@ -924,11 +924,11 @@ body  { background: var(--bg); }
 })();
 </script>
 <script>
-// --- Simple client-side rates renderer: always show all lenders, then hydrate if fetch works ---
+// --- Local Mortgage Rates: fast, no network ---
 const LENDERS = [
-  { id: "landmark",   name: "Landmark Credit Union",            url: "https://landmarkcu.com/mortgage-rates" },
-  { id: "guaranteed", name: "Guaranteed Rate",                   url: "https://www.rate.com/mortgage-rates" },
-  { id: "fairway",    name: "Fairway Independent Mortgage",      url: "https://www.fairwayindependentmc.com/mortgage-rates" }
+  { id: "landmark",   name: "Landmark Credit Union",       url: "https://landmarkcu.com/mortgage-rates" },
+  { id: "guaranteed", name: "Guaranteed Rate",              url: "https://www.rate.com/mortgage-rates" },
+  { id: "fairway",    name: "Fairway Independent Mortgage", url: "https://www.fairwayindependentmc.com/mortgage-rates" }
 ];
 
 function makeRateCard({ id, name, url }) {
@@ -938,7 +938,7 @@ function makeRateCard({ id, name, url }) {
   card.innerHTML = `
     <div style="display:flex;flex-direction:column;gap:2px">
       <strong>${name}</strong>
-      <span class="muted" id="rate-line-${id}">Loading latest quote…</span>
+      <span class="muted">Click “View” to see today’s posted rates.</span>
     </div>
     <a class="link" href="${url}" target="_blank" rel="noopener" aria-label="Open ${name} rates">View</a>
   `;
@@ -951,26 +951,6 @@ function makeRateCard({ id, name, url }) {
   wrap.innerHTML = "";
   LENDERS.forEach(l => wrap.appendChild(makeRateCard(l)));
 })();
-
-async function hydrateRates(){
-  for (const l of LENDERS) {
-    try {
-      const r = await fetch(l.url, { mode: "no-cors" }); // likely opaque due to CORS
-      const line = document.getElementById(`rate-line-${l.id}`);
-      if (!r || r.type === "opaque") {
-        if (line) line.textContent = "Live quote not available from source (click to view).";
-        continue;
-      }
-      const html = await r.text();
-      const rate = null; // add real parsing later
-      if (line) line.textContent = rate ? `30-yr: ${rate}` : "Live quote fetched — parsing needed (click for details).";
-    } catch {
-      const line = document.getElementById(`rate-line-${l.id}`);
-      if (line) line.textContent = "Couldn’t fetch live quote (source blocking).";
-    }
-  }
-}
-hydrateRates();
 </script>
 </body>
 </html>
