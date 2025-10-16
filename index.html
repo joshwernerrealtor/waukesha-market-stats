@@ -615,6 +615,35 @@ body  { background: var(--bg); }
     Indicative rates published on lender sites; subject to change. Not a commitment to lend.
   </p>
 </section>
+    <script>
+// --- Local Mortgage Rates: fast, no network ---
+const LENDERS = [
+  { id: "landmark",   name: "Landmark Credit Union",       url: "https://landmarkcu.com/mortgage-rates" },
+  { id: "guaranteed", name: "Guaranteed Rate",              url: "https://www.rate.com/mortgage-rates" },
+  { id: "fairway",    name: "Fairway Independent Mortgage", url: "https://www.fairwayindependentmc.com/mortgage-rates" }
+];
+
+function makeRateCard({ id, name, url }) {
+  const card = document.createElement("article");
+  card.className = "community-card";
+  card.id = `rate-${id}`;
+  card.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <strong>${name}</strong>
+      <span class="muted">Click “View” to see today’s posted rates.</span>
+    </div>
+    <a class="link" href="${url}" target="_blank" rel="noopener" aria-label="Open ${name} rates">View</a>
+  `;
+  return card;
+}
+
+(function mountRateCards(){
+  const wrap = document.getElementById("rates-list");
+  if (!wrap) return;
+  wrap.innerHTML = "";
+  LENDERS.forEach(l => wrap.appendChild(makeRateCard(l)));
+})();
+</script>
     <section class="grid-2">
       <article id="sf" class="card" aria-labelledby="sfTitle">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
@@ -640,7 +669,6 @@ body  { background: var(--bg); }
         </div>
       </article>
     </section>
-
     <section id="communities" class="card" style="margin-top:16px">
       <div style="display:flex;align-items:end;justify-content:space-between;gap:12px;flex-wrap:wrap">
         <div>
@@ -921,35 +949,6 @@ body  { background: var(--bg); }
   }
 
   document.addEventListener("DOMContentLoaded", boot);
-})();
-</script>
-<script>
-// --- Local Mortgage Rates: fast, no network ---
-const LENDERS = [
-  { id: "landmark",   name: "Landmark Credit Union",       url: "https://landmarkcu.com/mortgage-rates" },
-  { id: "guaranteed", name: "Guaranteed Rate",              url: "https://www.rate.com/mortgage-rates" },
-  { id: "fairway",    name: "Fairway Independent Mortgage", url: "https://www.fairwayindependentmc.com/mortgage-rates" }
-];
-
-function makeRateCard({ id, name, url }) {
-  const card = document.createElement("article");
-  card.className = "community-card";
-  card.id = `rate-${id}`;
-  card.innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:2px">
-      <strong>${name}</strong>
-      <span class="muted">Click “View” to see today’s posted rates.</span>
-    </div>
-    <a class="link" href="${url}" target="_blank" rel="noopener" aria-label="Open ${name} rates">View</a>
-  `;
-  return card;
-}
-
-(function mountRateCards(){
-  const wrap = document.getElementById("rates-list");
-  if (!wrap) return;
-  wrap.innerHTML = "";
-  LENDERS.forEach(l => wrap.appendChild(makeRateCard(l)));
 })();
 </script>
 </body>
