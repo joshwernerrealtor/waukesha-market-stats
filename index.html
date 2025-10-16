@@ -615,6 +615,70 @@ body  { background: var(--bg); }
     Indicative rates published on lender sites; subject to change. Not a commitment to lend.
   </p>
 </section>
+    <script>
+(() => {
+  const bodyEl   = document.getElementById("ratesBody");
+  const stampEl  = document.getElementById("ratesUpdated");
+
+  function row(l) {
+    const rate = (l.rate ? `${l.rate}%` : "—");
+    const apr  = (l.apr  ? `${l.apr}% APR` : "");
+    const pts  = (l.points ? `${l.points} pts` : "");
+    const sub  = [apr, pts].filter(Boolean).join(" • ");
+
+    const div = document.createElement("div");
+    div.className = "rate-row";
+    div.innerHTML = `
+      <div>
+        <h4>${l.name || "Lender"}</h4>
+        <div class="rate-tags">
+          <span class="tag">${l.product || "30 yr fixed"}</span>
+          ${l.url ? `<a class="tag" href="${l.url}" target="_blank" rel="noopener">Rate page</a>` : ""}
+          ${l.contactUrl ? `<a class="tag" href="${l.contactUrl}" target="_blank" rel="noopener">Get pre-approved</a>` : ""}
+        </div>
+      </div>
+      <div class="rate-nums">
+        <div class="num" style="font-size:18px">${rate}</div>
+        <div class="sub">${sub}</div>
+      </div>
+    `;
+    return div;
+  }
+
+  async function loadRates(){
+    try {
+      stampEl.textContent = "Loading…";
+      const r = await fetch("/api/rates", { headers: { accept: "application/json" } });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const j = await r.json();
+      const lenders = Array.isArray(j.lenders) ? j.lenders : [];
+
+      bodyEl.innerHTML = "";
+      lenders.forEach(l => bodyEl.appendChild(row(l)));
+
+      const ts = j.generatedAt || lenders[0]?.updatedAt;
+      if (ts) {
+        const d = new Date(ts);
+        stampEl.textContent = `Updated ${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+      } else {
+        stampEl.textContent = "Updated recently";
+      }
+    } catch (e) {
+      bodyEl.innerHTML = `
+        <div class="rate-row">
+          <div><h4>Rates unavailable</h4><small class="muted">Could not load lender data.</small></div>
+          <div class="rate-nums"><div class="num">—</div><div class="sub">Try again soon</div></div>
+        </div>`;
+      stampEl.textContent = "Error";
+      console.error(e);
+    }
+  }
+
+  // Initial and periodic refresh
+  loadRates();
+  setInterval(loadRates, 15 * 60 * 1000);
+})();
+</script>
     <section class="grid-2">
       <article id="sf" class="card" aria-labelledby="sfTitle">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
