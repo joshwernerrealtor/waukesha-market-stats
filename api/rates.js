@@ -1,29 +1,39 @@
 // pages/api/rates.js
-// Two lenders only: Associated Bank + UW Credit Union.
-// Tight parsing for 30-yr fixed, per-lender env overrides, strict timeouts,
-// short in-memory cache, no Landmark anywhere.
+// Associated Bank + UW Credit Union + Summit Credit Union (via RatesCentral JSON).
+// Summit uses: https://ratescentral.summitcreditunion.com/api/website/3Uw4xUFQt1EVCMpYRJuXKx/index.json[?ts]
+// Debug: /api/rates?debug=summit (or ab | uwcu | all)
 
 const CACHE_TTL_MS = 10 * 60 * 1000;  // 10 minutes
 const TIMEOUT_MS   = 7000;
-const MAX_LENDERS  = 2;
+const MAX_LENDERS  = 3;
 
 let CACHE = { ts: 0, data: null };
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "s-maxage=900, stale-while-revalidate=3600");
 
+  const url = new URL(req.url, "http://localhost");
+  const debug = url.searchParams.get("debug"); // 'summet' typo-safe handled below
+
   const now = Date.now();
-  if (CACHE.data && now - CACHE.ts < CACHE_TTL_MS) {
+  if (!debug && CACHE.data && now - CACHE.ts < CACHE_TTL_MS) {
     return res.status(200).json(CACHE.data);
   }
 
   try {
-    const [ab, uw] = await Promise.all([
-      withTimeout(fetchAssociatedBank(), TIMEOUT_MS).catch(() => null),
-      withTimeout(fetchUWCU(),          TIMEOUT_MS).catch(() => null),
+    const [ab, uw, sc] = await Promise.all([
+      withTimeout(fetchAssociatedBank({ debug: debug === "ab" || debug === "all" }), TIMEOUT_MS).catch(() => null),
+      withTimeout(fetchUWCU({ debug: debug === "uwcu" || debug === "all" }), TIMEOUT_MS).catch(() => null),
+      withTimeout(fetchSummitJSON({ debug: debug === "summit" || debug === "all" }), TIMEOUT_MS).catch(() => null),
     ]);
 
-    const list = [ab, uw].filter(Boolean).filter(x => x.rate || x.apr);
+    // Debug taps
+    if (debug === "ab"    && ab?.__debug)   return res.status(200).json(ab.__debug);
+    if (debug === "uwcu"  && uw?.__debug)   return res.status(200).json(uw.__debug);
+    if (debug === "summit"&& sc?.__debug)   return res.status(200).json(sc.__debug);
+    if (debug === "all")  return res.status(200).json({ ab: ab?.__debug ?? null, uwcu: uw?.__debug ?? null, summit: sc?.__debug ?? null });
+
+    const list = [ab, uw, sc].filter(Boolean).filter(x => x.rate || x.apr);
 
     const lenders = list
       .sort((a, b) => (a.order ?? 99) - (b.order ?? 99))
@@ -31,17 +41,13 @@ export default async function handler(req, res) {
 
     const payload = {
       generatedAt: new Date().toISOString(),
-      lenders: lenders.length ? lenders : fallbackSample().slice(0, MAX_LENDERS),
+      lenders: lenders.length ? lenders : fallbackSample().slice(0, MAX_LENDERS)
     };
 
     CACHE = { ts: now, data: payload };
     res.status(200).json(payload);
   } catch {
-    const payload = {
-      generatedAt: new Date().toISOString(),
-      lenders: fallbackSample().slice(0, MAX_LENDERS),
-      error: "partial",
-    };
+    const payload = { generatedAt: new Date().toISOString(), lenders: fallbackSample().slice(0, MAX_LENDERS), error: "partial" };
     CACHE = { ts: now, data: payload };
     res.status(200).json(payload);
   }
@@ -49,16 +55,14 @@ export default async function handler(req, res) {
 
 /* ================= Providers ================= */
 
-// ---------- Associated Bank ----------
-async function fetchAssociatedBank() {
-  // Optional env override
+// ---------- Associated Bank (HTML) ----------
+async function fetchAssociatedBank({ debug = false } = {}) {
   const envRate = toNum(process.env.AB_RATE);
   const envApr  = toNum(process.env.AB_APR);
   if (inRange(envRate) || inRange(envApr)) {
     const final = normalizeRateApr(envRate, envApr);
     return base("Associated Bank", final.rate, final.apr,
-      "https://www.associatedbank.com/personal/loans/home-loans/mortgage-rates?redir=A24",
-      1);
+      "https://www.associatedbank.com/personal/loans/home-loans/mortgage-rates?redir=A24", 1);
   }
 
   const url = "https://www.associatedbank.com/personal/loans/home-loans/mortgage-rates?redir=A24";
@@ -70,19 +74,20 @@ async function fetchAssociatedBank() {
   const duo      = (interest == null || apr == null) ? twoPercentsNearby(block) : null;
 
   const final = normalizeRateApr(pick(interest, duo?.base), pick(apr, duo?.apr));
-  return base("Associated Bank", final.rate, final.apr, url, 1);
+  const payload = base("Associated Bank", final.rate, final.apr, url, 1);
+
+  if (debug) payload.__debug = { lender: "AB", snippet: block.slice(0,1200), parsed: { interest, apr, duo }, final };
+  return payload;
 }
 
-// ---------- UW Credit Union ----------
-async function fetchUWCU() {
-  // Optional env override
+// ---------- UW Credit Union (HTML) ----------
+async function fetchUWCU({ debug = false } = {}) {
   const envRate = toNum(process.env.UWCU_RATE);
   const envApr  = toNum(process.env.UWCU_APR);
   if (inRange(envRate) || inRange(envApr)) {
     const final = normalizeRateApr(envRate, envApr);
     return base("UW Credit Union", final.rate, final.apr,
-      "https://www.uwcu.org/mortgage-home-loans/options/fixed-rate",
-      2);
+      "https://www.uwcu.org/mortgage-home-loans/options/fixed-rate", 2);
   }
 
   const url = "https://www.uwcu.org/mortgage-home-loans/options/fixed-rate";
@@ -95,7 +100,80 @@ async function fetchUWCU() {
   const apr  = findPercent(block, /\bAPR\b[^0-9]{0,20}([0-9]{1,2}\.[0-9]{1,3})\s*%/i);
 
   const final = normalizeRateApr(rate, apr);
-  return base("UW Credit Union", final.rate, final.apr, url, 2);
+  const payload = base("UW Credit Union", final.rate, final.apr, url, 2);
+
+  if (debug) payload.__debug = { lender: "UWCU", snippet: block.slice(0,1200), parsed: { rate, apr }, final };
+  return payload;
+}
+
+// ---------- Summit Credit Union (RatesCentral JSON) ----------
+async function fetchSummitJSON({ debug = false } = {}) {
+  // Optional env override
+  const envRate = toNum(process.env.SUMMIT_RATE);
+  const envApr  = toNum(process.env.SUMMIT_APR);
+  const override = inRange(envRate) || inRange(envApr);
+
+  // Their JSON endpoint (thanks, Josh)
+  const baseUrl = "https://ratescentral.summitcreditunion.com/api/website/3Uw4xUFQt1EVCMpYRJuXKx/index.json";
+
+  // Try with ts param then without; send a referer + accept headers
+  let json = null, usedUrl = null, error = null;
+  for (const candidate of [`${baseUrl}?${Date.now()}`, baseUrl]) {
+    try {
+      json = await fetchJSON(candidate, {
+        headers: {
+          "accept": "application/json",
+          "referer": "https://www.summitcreditunion.com/",
+          "user-agent": "Mozilla/5.0 ratesbot"
+        }
+      });
+      usedUrl = candidate;
+      break;
+    } catch (e) {
+      error = e;
+    }
+  }
+
+  // If JSON failed but overrides exist, return override
+  if (!json) {
+    if (override) {
+      const final = normalizeRateApr(envRate, envApr);
+      const payload = base("Summit Credit Union", final.rate, final.apr,
+        "https://www.summitcreditunion.com/borrow/mortgage-loan/#mortgage-rates", 3);
+      if (debug) payload.__debug = { lender: "Summit", note: "used env override", error: String(error) };
+      return payload;
+    }
+    // No data at all → skip Summit
+    if (debug) return { __debug: { lender: "Summit", note: "JSON fetch failed and no override", error: String(error) } };
+    return null;
+  }
+
+  // Heuristic: walk the JSON for an object representing 30-year fixed mortgage with labeled rate/APR.
+  const pick = findThirtyFixed(json);
+
+  const final = normalizeRateApr(toNum(pick?.rate), toNum(pick?.apr));
+  const payload = base("Summit Credit Union", final.rate, final.apr,
+    "https://www.summitcreditunion.com/borrow/mortgage-loan/#mortgage-rates", 3);
+
+  if (debug) {
+    payload.__debug = {
+      lender: "Summit",
+      usedUrl,
+      sample: stringifySample(json),
+      selected: pick,
+      final
+    };
+  }
+  // If we still failed to find numbers and no override, drop Summit to avoid junk
+  if (!payload.rate && !override) return debug ? payload : null;
+
+  // If numbers missing but override exists, merge it
+  if (!payload.rate && override) {
+    const merged = normalizeRateApr(envRate, envApr);
+    payload.rate = merged.rate; payload.apr = merged.apr;
+  }
+
+  return payload;
 }
 
 /* ================= Helpers ================= */
@@ -166,6 +244,12 @@ async function fetchText(url, opts = {}) {
   return res.text();
 }
 
+async function fetchJSON(url, opts = {}) {
+  const res = await fetch(url, opts);
+  if (!res.ok) throw new Error(`Bad JSON ${res.status} for ${url}`);
+  return res.json();
+}
+
 async function withTimeout(promise, ms) {
   return await Promise.race([
     promise,
@@ -173,7 +257,76 @@ async function withTimeout(promise, ms) {
   ]);
 }
 
-/* fallback only if literally nothing parsed */
+/* ---- Summit JSON traversal ----
+   We don't know their exact shape forever, so:
+   - scan for items whose label/title includes "30" and "Fixed"
+   - pick fields named like rate/apr/interest
+   - prefer smaller number as base rate if two percents found
+*/
+function findThirtyFixed(json) {
+  let best = null;
+
+  walk(json, (obj) => {
+    if (typeof obj !== "object" || !obj) return;
+
+    const text = [
+      obj.title, obj.name, obj.label, obj.product, obj.header,
+      Array.isArray(obj.tags) ? obj.tags.join(" ") : ""
+    ].filter(Boolean).join(" ").toLowerCase();
+
+    const looksLikeThirtyFixed =
+      /\b30\b/.test(text) && /fix/.test(text) && /mortg|home|loan|rate/.test(text);
+
+    if (!looksLikeThirtyFixed) return;
+
+    const rateLike = pickField(obj, ["rate", "interest", "interestRate", "baseRate"]);
+    const aprLike  = pickField(obj, ["apr", "a.p.r", "annualPercentageRate"]);
+
+    // If not found directly, scan nested value strings for percents
+    let rate = toNum(rateLike);
+    let apr  = toNum(aprLike);
+
+    if (!rate || !apr) {
+      const pair = twoPercentsNearby(JSON.stringify(obj));
+      if (pair) {
+        if (!rate) rate = toNum(pair.base);
+        if (!apr)  apr  = toNum(pair.apr);
+      }
+    }
+
+    if (rate || apr) {
+      const final = normalizeRateApr(rate, apr);
+      best = best || { rate: final.rate, apr: final.apr, raw: obj };
+    }
+  });
+
+  return best;
+}
+
+function pickField(obj, names) {
+  for (const key of Object.keys(obj)) {
+    const low = key.toLowerCase();
+    if (names.some(n => low.includes(n))) return obj[key];
+  }
+  return undefined;
+}
+
+function walk(node, fn) {
+  fn(node);
+  if (Array.isArray(node)) { for (const v of node) walk(v, fn); }
+  else if (node && typeof node === "object") {
+    for (const k of Object.keys(node)) walk(node[k], fn);
+  }
+}
+
+function stringifySample(json) {
+  try {
+    const s = JSON.stringify(json);
+    return s.length > 2000 ? s.slice(0, 2000) + "…(truncated)" : s;
+  } catch { return ""; }
+}
+
+/* ---- Fallback ---- */
 function fallbackSample() {
   const now = new Date().toISOString();
   return [
@@ -183,5 +336,8 @@ function fallbackSample() {
     { name: "UW Credit Union", product: "30 yr fixed", rate: "6.000", apr: "6.047",
       url: "https://www.uwcu.org/mortgage-home-loans/options/fixed-rate",
       contactUrl: "https://www.uwcu.org/", updatedAt: now, order: 2 },
+    { name: "Summit Credit Union", product: "30 yr fixed", rate: undefined, apr: undefined,
+      url: "https://www.summitcreditunion.com/borrow/mortgage-loan/#mortgage-rates",
+      contactUrl: "https://www.summitcreditunion.com/borrow/mortgage-loan/#mortgage-rates", updatedAt: now, order: 3 },
   ];
 }
