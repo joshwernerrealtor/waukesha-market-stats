@@ -1,8 +1,18 @@
 // pages/api/rates.js
-// Serverless endpoint for lender rates. Parallel fetch with timeouts; prefers rate, falls back to APR.
+// Parallel fetch with timeouts + 10-minute in-memory cache per region.
+// Falls back to APR when base rate missing.
+
+let CACHE = { ts: 0, data: null }; // survives while the function instance stays warm
 
 export default async function handler(req, res) {
-  res.setHeader('Cache-Control', 's-maxage=900, stale-while-revalidate=3600'); // 15m cache, 1h stale
+  res.setHeader('Cache-Control', 's-maxage=900, stale-while-revalidate=3600'); // 15m CDN cache
+
+  // Serve warm cache instantly (10 minutes)
+  const now = Date.now();
+  if (CACHE.data && (now - CACHE.ts) < 10 * 60 * 1000) {
+    return res.status(200).json(CACHE.data);
+  }
+
   try {
     const results = await Promise.allSettled([
       withTimeout(landmarkCU(), 6000),
@@ -18,26 +28,25 @@ export default async function handler(req, res) {
       .filter(x => x && (x.rate || x.apr))
       .sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
 
-    res.status(200).json({
+    const payload = {
       generatedAt: new Date().toISOString(),
-      lenders: lenders.length >= 2 ? lenders : (lenders.length ? lenders.concat(fallbackSample().slice(0, 2 - lenders.length)) : fallbackSample())
-    });
+      lenders: lenders.length ? lenders : fallbackSample()
+    };
+
+    CACHE = { ts: now, data: payload };
+    res.status(200).json(payload);
   } catch (e) {
-    res.status(200).json({ generatedAt: new Date().toISOString(), lenders: fallbackSample(), error: 'partial' });
+    const payload = { generatedAt: new Date().toISOString(), lenders: fallbackSample(), error: 'partial' };
+    CACHE = { ts: now, data: payload };
+    res.status(200).json(payload);
   }
 }
 
 async function withTimeout(promise, ms) {
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), ms);
-  try {
-    const val = await promise;
-    clearTimeout(t);
-    return val;
-  } catch (e) {
-    clearTimeout(t);
-    throw e;
-  }
+  return await Promise.race([
+    promise,
+    new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))
+  ]);
 }
 
 async function fetchText(url, opts = {}) {
@@ -46,7 +55,7 @@ async function fetchText(url, opts = {}) {
   return res.text();
 }
 
-// Prefer base rate if found; otherwise APR. Return whichever exists.
+// Prefer base rate; if missing, at least provide APR so UI shows a number
 function parseThirtyYear(html) {
   const clean = html.replace(/\s+/g, ' ');
   const patterns = [
@@ -59,20 +68,15 @@ function parseThirtyYear(html) {
     if (m) {
       const a = parseFloat(m[1]);
       const b = parseFloat(m[2]);
-      const rate = Math.min(a, b);
-      const apr  = Math.max(a, b);
-      return {
-        rate: isFinite(rate) ? trim(rate) : undefined,
-        apr: isFinite(apr) ? trim(apr) : undefined,
-      };
+      const base = isFinite(a) && isFinite(b) ? Math.min(a, b) : undefined;
+      const apr  = isFinite(a) && isFinite(b) ? Math.max(a, b) : undefined;
+      return { rate: base ? trim(base) : undefined, apr: apr ? trim(apr) : undefined };
     }
   }
   return { rate: undefined, apr: undefined };
 }
 
-function trim(n) {
-  return n.toFixed(3).replace(/0{1,2}$/, '');
-}
+function trim(n) { return n.toFixed(3).replace(/0{1,2}$/, ''); }
 
 // Providers
 async function landmarkCU() {
@@ -106,7 +110,6 @@ async function associatedBank() {
   return { name: 'Associated Bank', product: '30 yr fixed', rate, apr, url, contactUrl: 'https://www.associatedbank.com/', updatedAt: new Date().toISOString(), order: 5 };
 }
 
-// Fallback list so your UI never shows a wall of dashes
 function fallbackSample() {
   const now = new Date().toISOString();
   return [
