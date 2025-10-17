@@ -1,14 +1,16 @@
 // pages/api/rates.js
-// Associated Bank only. Targets the "30 Year Fixed" block and reads labeled Interest Rate and APR.
-// Short cache + strict timeouts. If parsing fails, returns a sane fallback so the UI never shows dashes.
+// Returns up to 2 lenders: Associated Bank + Landmark Credit Union.
+// Server-side fetch with strict timeouts, short in-memory cache, de-dup by name,
+// and tolerant parsing that prefers the base "Interest Rate" but falls back to APR.
 
-const CACHE_TTL_MS = 10 * 60 * 1000;  // 10 minutes
-const TIMEOUT_MS   = 7000;            // 7 seconds
+const CACHE_TTL_MS = 10 * 60 * 1000;  // 10 minutes in-memory (per warm function)
+const TIMEOUT_MS   = 7000;            // 7 seconds per provider
+const MAX_LENDERS  = 2;               // show Associated + Landmark (you can increase later)
 
 let CACHE = { ts: 0, data: null };
 
 export default async function handler(req, res) {
-  res.setHeader("Cache-Control", "s-maxage=900, stale-while-revalidate=3600"); // 15m CDN
+  res.setHeader("Cache-Control", "s-maxage=900, stale-while-revalidate=3600"); // 15m edge cache
 
   const now = Date.now();
   if (CACHE.data && now - CACHE.ts < CACHE_TTL_MS) {
@@ -16,49 +18,61 @@ export default async function handler(req, res) {
   }
 
   try {
-    const lender = await withTimeout(fetchAssociatedBank(), TIMEOUT_MS);
+    const results = await Promise.allSettled([
+      withTimeout(fetchAssociatedBank(), TIMEOUT_MS),
+      withTimeout(fetchLandmarkCU(),    TIMEOUT_MS),
+    ]);
 
-    const list = lender && (lender.rate || lender.apr)
-      ? [lender]
-      : fallbackSample();
+    // keep good ones with at least one numeric field
+    const list = results
+      .filter(r => r.status === "fulfilled" && r.value)
+      .map(r => r.value)
+      .filter(x => x && (x.rate || x.apr));
+
+    const lenders = dedupeByName(list)
+      .sort((a, b) => (a.order ?? 99) - (b.order ?? 99))
+      .slice(0, MAX_LENDERS);
 
     const payload = {
       generatedAt: new Date().toISOString(),
-      lenders: list.slice(0, 1)
+      lenders: lenders.length ? lenders : fallbackSample().slice(0, MAX_LENDERS)
     };
 
     CACHE = { ts: now, data: payload };
     res.status(200).json(payload);
-  } catch (e) {
-    const payload = { generatedAt: new Date().toISOString(), lenders: fallbackSample(), error: "partial" };
+  } catch {
+    const payload = {
+      generatedAt: new Date().toISOString(),
+      lenders: fallbackSample().slice(0, MAX_LENDERS),
+      error: "partial"
+    };
     CACHE = { ts: now, data: payload };
     res.status(200).json(payload);
   }
 }
 
-/* ---------------- Provider: Associated Bank ---------------- */
+/* ---------------- Providers ---------------- */
 
+// 1) Associated Bank — your provided page with labeled Interest Rate/APR
 async function fetchAssociatedBank() {
   const url = "https://www.associatedbank.com/personal/loans/home-loans/mortgage-rates?redir=A24";
   const html = await fetchText(url);
 
-  // Narrow to the “30 Year Fixed” neighborhood so we don’t grab Jumbo/ARM rows.
-  // We take ~1500 chars around the first match for safety.
+  // Narrow to the “30 Year Fixed” area so we don’t snag jumbo/ARM rows.
   const block = extractThirtyYearBlock(html);
 
-  // Pull labeled Interest Rate and APR within that block.
+  // Prefer labeled "Interest Rate" and "APR"
   const interest = findPercent(block, /(Interest\s*Rate|Rate)\s*:?\s*(\d{1,2}\.\d{1,3})\s*%/i);
   const apr      = findPercent(block, /\bAPR\b\s*:?\s*(\d{1,2}\.\d{1,3})\s*%/i);
 
-  // If we didn’t get labeled values, try the “two percents near each other” fallback.
-  const duo = interest == null || apr == null ? twoPercentsNearby(block) : null;
-  const baseRate = interest ?? duo?.base ?? undefined;
-  const aprRate  = apr ?? duo?.apr ?? undefined;
+  // If labels weren’t found, try "two percents near each other" fallback
+  const duo = (interest == null || apr == null) ? twoPercentsNearby(block) : null;
 
-  // Sanity: ignore absurd numbers, and don’t let APR be lower than base if both present.
-  const cleanRate = inRange(baseRate) ? baseRate : undefined;
-  const cleanAPR  = inRange(aprRate)  ? aprRate  : undefined;
-  const final = normalizeRateApr(cleanRate, cleanAPR);
+  // Choose final numbers with sanity checks
+  const baseRate = inRange(interest) ? interest : inRange(duo?.base) ? duo.base : undefined;
+  const aprRate  = inRange(apr)      ? apr      : inRange(duo?.apr)  ? duo.apr  : undefined;
+
+  const final = normalizeRateApr(baseRate, aprRate);
 
   return {
     name: "Associated Bank",
@@ -72,11 +86,41 @@ async function fetchAssociatedBank() {
   };
 }
 
+// 2) Landmark Credit Union — public HTML page
+async function fetchLandmarkCU() {
+  const url = "https://landmarkcu.com/mortgage-rates";
+  const html = await fetchText(url);
+
+  // Try to isolate the 30-year area first; then parse percents
+  const block = extractThirtyYearBlock(html);
+
+  // Landmark sometimes presents “Rate … APR …” in the same vicinity
+  const interest = findPercent(block, /(Interest\s*Rate|Rate)\s*:?\s*(\d{1,2}\.\d{1,3})\s*%/i);
+  const apr      = findPercent(block, /\bAPR\b\s*:?\s*(\d{1,2}\.\d{1,3})\s*%/i);
+  const duo      = (interest == null || apr == null) ? twoPercentsNearby(block) : null;
+
+  const baseRate = inRange(interest) ? interest : inRange(duo?.base) ? duo.base : undefined;
+  const aprRate  = inRange(apr)      ? apr      : inRange(duo?.apr)  ? duo.apr  : undefined;
+
+  const final = normalizeRateApr(baseRate, aprRate);
+
+  return {
+    name: "Landmark Credit Union",
+    product: "30 yr fixed",
+    rate: final.rate,
+    apr: final.apr,
+    url,
+    contactUrl: "https://landmarkcu.com/mortgage",
+    updatedAt: new Date().toISOString(),
+    order: 2
+  };
+}
+
 /* ---------------- Parsing helpers ---------------- */
 
 function extractThirtyYearBlock(html) {
   const clean = html.replace(/\s+/g, " ");
-  const m = clean.match(/30\s*(?:year|yr)\s*(?:fixed)?[^]{0,1500}/i);
+  const m = clean.match(/30\s*(?:year|yr)\s*(?:fixed)?[^]{0,1800}/i); // take a reasonable window
   return m ? m[0] : clean.slice(0, 2000);
 }
 
@@ -100,15 +144,13 @@ function twoPercentsNearby(txt) {
 }
 
 function normalizeRateApr(rate, apr) {
-  // If only one is present, use it as the big number.
+  // If only one number is present, use it as the main rate.
   if (rate != null && apr == null) return { rate, apr: undefined };
   if (rate == null && apr != null) return { rate: apr, apr }; // show APR as the big number
 
   if (rate != null && apr != null) {
-    // APR should never be less than the base rate. If it is, swap.
-    if (parseFloat(apr) < parseFloat(rate)) {
-      return { rate: apr, apr: rate };
-    }
+    // APR should not be lower than base rate; if it is, swap them.
+    if (parseFloat(apr) < parseFloat(rate)) return { rate: apr, apr: rate };
     return { rate, apr };
   }
   return { rate: undefined, apr: undefined };
@@ -116,7 +158,7 @@ function normalizeRateApr(rate, apr) {
 
 function inRange(n) {
   const x = parseFloat(n);
-  return Number.isFinite(x) && x >= 2 && x <= 20; // keep it sane
+  return Number.isFinite(x) && x >= 2 && x <= 20; // keep to plausible mortgage range
 }
 
 function trim(n) {
@@ -138,18 +180,46 @@ async function withTimeout(promise, ms) {
   ]);
 }
 
-/* ---------------- Fallback (shown only if parsing fails) ---------------- */
+// Deduplicate by lender name; prefer entries that have a base rate
+function dedupeByName(items) {
+  const m = new Map();
+  for (const it of items) {
+    const key = String(it.name || "").trim().toLowerCase();
+    if (!key) continue;
+    if (!m.has(key)) { m.set(key, it); continue; }
+    const cur = m.get(key);
+    const better =
+      (it.rate && !cur.rate) ? it :
+      (it.rate && cur.rate ? (Number(it.rate) <= Number(cur.rate) ? it : cur) : cur);
+    m.set(key, better);
+  }
+  return [...m.values()];
+}
+
+/* ---------------- Fallback (shown only if parsing/timing fails) ---------------- */
 
 function fallbackSample() {
   const now = new Date().toISOString();
-  return [{
-    name: "Associated Bank",
-    product: "30 yr fixed",
-    rate: "6.125",   // align with what you observed on their site
-    apr:  "6.250",
-    url: "https://www.associatedbank.com/personal/loans/home-loans/mortgage-rates?redir=A24",
-    contactUrl: "https://www.associatedbank.com/personal/loans/home-loans",
-    updatedAt: now,
-    order: 1
-  }];
+  return [
+    {
+      name: "Associated Bank",
+      product: "30 yr fixed",
+      rate: "6.125",
+      apr:  "6.250",
+      url: "https://www.associatedbank.com/personal/loans/home-loans/mortgage-rates?redir=A24",
+      contactUrl: "https://www.associatedbank.com/personal/loans/home-loans",
+      updatedAt: now,
+      order: 1
+    },
+    {
+      name: "Landmark Credit Union",
+      product: "30 yr fixed",
+      rate: "6.875",
+      apr:  "6.990",
+      url: "https://landmarkcu.com/mortgage-rates",
+      contactUrl: "https://landmarkcu.com/mortgage",
+      updatedAt: now,
+      order: 2
+    }
+  ];
 }
