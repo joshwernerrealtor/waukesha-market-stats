@@ -1,7 +1,7 @@
 {
-  "name": "waukesha-rpr-api",
+  "name": "waukesha-market-stats",
+  "version": "1.0.0",
   "private": true,
-  "type": "module",
   "dependencies": {
     "pdf-parse": "^1.1.1"
   }
