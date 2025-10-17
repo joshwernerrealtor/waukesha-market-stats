@@ -1,14 +1,16 @@
 // pages/api/rates.js
 // Lenders: Associated Bank + Landmark CU + UW Credit Union.
-// Tight parsing for 30-year fixed with labeled Rate/APR, strict timeouts,
-// short in-memory cache, de-dup by name, and env-var overrides for Landmark.
+// Landmark parser hardened; env override; debug mode.
 //
-// Env (optional):
-//   LCU_RATE=6.625
-//   LCU_APR=6.740
+// Debug mode:
+//   /api/rates?debug=landmark   -> returns the snippet we parsed + numbers
+//
+// Env (optional, takes precedence for Landmark):
+//   LCU_RATE=6.125
+//   LCU_APR=6.240
 
 const CACHE_TTL_MS = 10 * 60 * 1000;  // 10 minutes
-const TIMEOUT_MS   = 7000;            // 7 seconds per provider
+const TIMEOUT_MS   = 7000;
 const MAX_LENDERS  = 3;
 
 let CACHE = { ts: 0, data: null };
@@ -16,22 +18,29 @@ let CACHE = { ts: 0, data: null };
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "s-maxage=900, stale-while-revalidate=3600");
 
+  // Quick debug hook for Landmark
+  const urlDebug = new URL(req.url, "http://localhost");
+  const debugTarget = urlDebug.searchParams.get("debug");
+
+  // Warm in-memory cache
   const now = Date.now();
-  if (CACHE.data && now - CACHE.ts < CACHE_TTL_MS) {
+  if (!debugTarget && CACHE.data && now - CACHE.ts < CACHE_TTL_MS) {
     return res.status(200).json(CACHE.data);
   }
 
   try {
-    const results = await Promise.allSettled([
-      withTimeout(fetchAssociatedBank(), TIMEOUT_MS),
-      withTimeout(fetchLandmarkCU(),    TIMEOUT_MS),
-      withTimeout(fetchUWCU(),          TIMEOUT_MS),
+    const [ab, lcu, uw] = await Promise.all([
+      withTimeout(fetchAssociatedBank(), TIMEOUT_MS).catch(() => null),
+      withTimeout(fetchLandmarkCU({ debug: debugTarget === "landmark" }), TIMEOUT_MS).catch(() => null),
+      withTimeout(fetchUWCU(), TIMEOUT_MS).catch(() => null),
     ]);
 
-    const list = results
-      .filter(r => r.status === "fulfilled" && r.value)
-      .map(r => r.value)
-      .filter(x => x && (x.rate || x.apr));
+    // Debug mode: show raw snippet for Landmark
+    if (debugTarget === "landmark" && lcu && lcu.__debug) {
+      return res.status(200).json(lcu.__debug);
+    }
+
+    const list = [ab, lcu, uw].filter(Boolean).filter(x => x.rate || x.apr);
 
     const lenders = dedupeByName(list)
       .sort((a, b) => (a.order ?? 99) - (b.order ?? 99))
@@ -42,35 +51,31 @@ export default async function handler(req, res) {
       lenders: lenders.length ? lenders : fallbackSample().slice(0, MAX_LENDERS)
     };
 
-    CACHE = { ts: now, data: payload };
-    res.status(200).json(payload);
+    if (!debugTarget) CACHE = { ts: now, data: payload };
+    return res.status(200).json(payload);
   } catch {
     const payload = {
       generatedAt: new Date().toISOString(),
       lenders: fallbackSample().slice(0, MAX_LENDERS),
       error: "partial"
     };
-    CACHE = { ts: now, data: payload };
-    res.status(200).json(payload);
+    if (!debugTarget) CACHE = { ts: now, data: payload };
+    return res.status(200).json(payload);
   }
 }
 
 /* ---------------- Providers ---------------- */
 
-// Associated Bank — labeled Interest Rate/APR near "30 Year Fixed"
 async function fetchAssociatedBank() {
   const url = "https://www.associatedbank.com/personal/loans/home-loans/mortgage-rates?redir=A24";
   const html = await fetchText(url);
   const block = extractThirtyYearBlock(html);
 
-  const interest = findPercent(block, /(Interest\s*Rate|Rate)\s*:?\s*(\d{1,2}\.\d{1,3})\s*%/i);
-  const apr      = findPercent(block, /\bAPR\b\s*:?\s*(\d{1,2}\.\d{1,3})\s*%/i);
+  const interest = findPercent(block, /(Interest\s*Rate|Rate)\s*:?\s*([0-9]{1,2}\.[0-9]{1,3})\s*%/i);
+  const apr      = findPercent(block, /\bAPR\b\s*:?\s*([0-9]{1,2}\.[0-9]{1,3})\s*%/i);
   const duo      = (interest == null || apr == null) ? twoPercentsNearby(block) : null;
 
-  const baseRate = inRange(interest) ? interest : inRange(duo?.base) ? duo.base : undefined;
-  const aprRate  = inRange(apr)      ? apr      : inRange(duo?.apr)  ? duo.apr  : undefined;
-
-  const final = normalizeRateApr(baseRate, aprRate);
+  const final = normalizeRateApr(pick(interest, duo?.base), pick(apr, duo?.apr));
 
   return {
     name: "Associated Bank",
@@ -84,15 +89,15 @@ async function fetchAssociatedBank() {
   };
 }
 
-// Landmark Credit Union — hardened parser + optional env var override
-async function fetchLandmarkCU() {
+// Landmark CU — hardened parser with env override + debug payload
+async function fetchLandmarkCU({ debug = false } = {}) {
   const url = "https://landmarkcu.com/mortgage-rates";
 
-  // 0) Env override takes precedence if set
+  // 0) Env override wins instantly
   const envRate = toNum(process.env.LCU_RATE);
   const envApr  = toNum(process.env.LCU_APR);
   if (inRange(envRate) || inRange(envApr)) {
-    const final = normalizeRateApr(inRange(envRate) ? envRate : undefined, inRange(envApr) ? envApr : undefined);
+    const final = normalizeRateApr(envRate, envApr);
     return {
       name: "Landmark Credit Union",
       product: "30 yr fixed",
@@ -108,38 +113,35 @@ async function fetchLandmarkCU() {
   // 1) Live parse
   const html = await fetchText(url);
   const clean = html.replace(/\s+/g, " ");
+  // Landmark sometimes puts the product text like "30 Year Fixed" or "Fixed 30 Year"
+  const block = captureAroundAny(clean, [
+    /30\s*(?:year|yr)\s*(?:fixed)/i,
+    /fixed\s*30\s*(?:year|yr)/i
+  ], 2000);
 
-  // A) Try a table-row style capture: "<tr>...30 Year Fixed...<td>Rate</td><td>APR</td>"
-  let block = captureAround(clean, /30\s*(?:year|yr)\s*fixed/i, 1600);
+  // Strategy: try in this order
+  // A) Labeled "Rate" and "APR" nearby
+  let rate = findPercent(block, /(Interest\s*Rate|^|\bRate\b)[^0-9]{0,24}([0-9]{1,2}\.[0-9]{1,3})\s*%/i);
+  let apr  = findPercent(block, /\bAPR\b[^0-9]{0,24}([0-9]{1,2}\.[0-9]{1,3})\s*%/i);
 
-  // Pull labeled first
-  let interest = findPercent(block, /(Interest\s*Rate|Rate)\s*:?\s*(\d{1,2}\.\d{1,3})\s*%/i);
-  let apr      = findPercent(block, /\bAPR\b\s*:?\s*(\d{1,2}\.\d{1,3})\s*%/i);
-
-  // If that failed, try structured HTML cell pattern near the product name
-  if (interest == null || apr == null) {
-    const rowMatch =
-      block.match(/(?:30\s*(?:year|yr)\s*fixed)[^<]{0,400}?(?:<\/?(?:td|th)[^>]*>){0,2}[^%]*?(\d{1,2}\.\d{1,3})\s*%[^%]{0,120}?(\d{1,2}\.\d{1,3})\s*%/i);
-    if (rowMatch) {
-      const a = parseFloat(rowMatch[1]);
-      const b = parseFloat(rowMatch[2]);
-      if (Number.isFinite(a) && Number.isFinite(b)) {
-        // Smaller is base rate, larger is APR
-        interest = trim(Math.min(a, b));
-        apr      = trim(Math.max(a, b));
+  // B) Table-like capture: cells after the product name contain two percents
+  if (rate == null || apr == null) {
+    const row = block.match(/(?:30\s*(?:year|yr)\s*fixed|fixed\s*30\s*(?:year|yr))[^%]{0,500}?([0-9]{1,2}\.[0-9]{1,3})\s*%[^%]{0,120}?([0-9]{1,2}\.[0-9]{1,3})\s*%/i);
+    if (row) {
+      const a = parseFloat(row[1]), b = parseFloat(row[2]);
+      if (isFinite(a) && isFinite(b)) {
+        // smaller is base, bigger is APR
+        rate = trim(Math.min(a, b));
+        apr  = trim(Math.max(a, b));
       }
     }
   }
 
-  // Last resort: two percents near each other
-  const duo = (interest == null || apr == null) ? twoPercentsNearby(block) : null;
+  // C) Last resort: two percents near each other in the block
+  const duo = (rate == null || apr == null) ? twoPercentsNearby(block) : null;
+  const final = normalizeRateApr(pick(rate, duo?.base), pick(apr, duo?.apr));
 
-  const baseRate = inRange(interest) ? interest : inRange(duo?.base) ? duo.base : undefined;
-  const aprRate  = inRange(apr)      ? apr      : inRange(duo?.apr)  ? duo.apr  : undefined;
-
-  const final = normalizeRateApr(baseRate, aprRate);
-
-  return {
+  const payload = {
     name: "Landmark Credit Union",
     product: "30 yr fixed",
     rate: final.rate,
@@ -149,9 +151,19 @@ async function fetchLandmarkCU() {
     updatedAt: new Date().toISOString(),
     order: 2
   };
+
+  if (debug) {
+    payload.__debug = {
+      message: "Landmark parser debug",
+      snippet: block.slice(0, 1200),
+      parsed: { rate, apr, duo },
+      final
+    };
+  }
+
+  return payload;
 }
 
-// UW Credit Union — “30-Year Fixed Rate Purchase” block
 async function fetchUWCU() {
   const url = "https://www.uwcu.org/mortgage-home-loans/options/fixed-rate";
   const html = await fetchText(url);
@@ -160,10 +172,10 @@ async function fetchUWCU() {
   const match = clean.match(/30[-\s]?Year\s+Fixed\s+Rate\s+Purchase[^]{0,1200}/i);
   const block = match ? match[0] : extractThirtyYearBlock(clean);
 
-  const rate = findPercent(block, /Rate[^0-9]{0,20}(\d{1,2}\.\d{1,3})\s*%/i);
-  const apr  = findPercent(block, /\bAPR\b[^0-9]{0,20}(\d{1,2}\.\d{1,3})\s*%/i);
+  const rate = findPercent(block, /Rate[^0-9]{0,20}([0-9]{1,2}\.[0-9]{1,3})\s*%/i);
+  const apr  = findPercent(block, /\bAPR\b[^0-9]{0,20}([0-9]{1,2}\.[0-9]{1,3})\s*%/i);
 
-  const final = normalizeRateApr(inRange(rate) ? rate : undefined, inRange(apr) ? apr : undefined);
+  const final = normalizeRateApr(rate, apr);
 
   return {
     name: "UW Credit Union",
@@ -177,7 +189,7 @@ async function fetchUWCU() {
   };
 }
 
-/* ---------------- Parsing helpers ---------------- */
+/* ---------------- Helpers ---------------- */
 
 function extractThirtyYearBlock(html) {
   const clean = html.replace(/\s+/g, " ");
@@ -185,11 +197,15 @@ function extractThirtyYearBlock(html) {
   return m ? m[0] : clean.slice(0, 2000);
 }
 
-function captureAround(txt, re, span = 1500) {
-  const m = txt.match(re);
-  if (!m) return txt.slice(0, span);
-  const i = m.index ?? 0;
-  return txt.slice(Math.max(0, i), Math.min(txt.length, i + span));
+function captureAroundAny(txt, regexes, span = 1500) {
+  for (const re of regexes) {
+    const m = txt.match(re);
+    if (m) {
+      const i = m.index ?? 0;
+      return txt.slice(Math.max(0, i), Math.min(txt.length, i + span));
+    }
+  }
+  return txt.slice(0, span);
 }
 
 function findPercent(txt, re) {
@@ -202,8 +218,8 @@ function findPercent(txt, re) {
 
 function twoPercentsNearby(txt) {
   const m =
-    txt.match(/(\d{1,2}\.\d{1,3})\s*%[^%]{0,140}?(?:APR|A\.?P\.?R\.?)\s*(\d{1,2}\.\d{1,3})\s*%/i) ||
-    txt.match(/(?:APR|A\.?P\.?R\.?)\s*(\d{1,2}\.\d{1,3})\s*%[^%]{0,140}?(\d{1,2}\.\d{1,3})\s*%/i);
+    txt.match(/([0-9]{1,2}\.[0-9]{1,3})\s*%[^%]{0,140}?(?:APR|A\.?P\.?R\.?)\s*([0-9]{1,2}\.[0-9]{1,3})\s*%/i) ||
+    txt.match(/(?:APR|A\.?P\.?R\.?)\s*([0-9]{1,2}\.[0-9]{1,3})\s*%[^%]{0,140}?([0-9]{1,2}\.[0-9]{1,3})\s*%/i);
   if (!m) return null;
   const a = parseFloat(m[1]), b = parseFloat(m[2]);
   if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
@@ -213,8 +229,9 @@ function twoPercentsNearby(txt) {
 }
 
 function normalizeRateApr(rate, apr) {
+  // use whichever is present; if both, ensure APR >= base
   if (rate != null && apr == null) return { rate, apr: undefined };
-  if (rate == null && apr != null) return { rate: apr, apr }; // show APR as main if no base
+  if (rate == null && apr != null) return { rate: apr, apr };
   if (rate != null && apr != null) {
     if (parseFloat(apr) < parseFloat(rate)) return { rate: apr, apr: rate };
     return { rate, apr };
@@ -222,15 +239,27 @@ function normalizeRateApr(rate, apr) {
   return { rate: undefined, apr: undefined };
 }
 
+function pick(a, b) {
+  const A = toNum(a), B = toNum(b);
+  if (inRange(A)) return trim(A);
+  if (inRange(B)) return trim(B);
+  return undefined;
+}
+
 function inRange(n) {
   const x = parseFloat(n);
   return Number.isFinite(x) && x >= 2 && x <= 20;
 }
 
-function trim(n) { return n.toFixed(3).replace(/0{1,2}$/, ""); }
-function toNum(v) { if (v == null) return undefined; const n = Number(String(v).replace(/[^\d.]/g, "")); return Number.isFinite(n) ? n : undefined; }
+function trim(n) {
+  return Number(n).toFixed(3).replace(/0{1,2}$/, "");
+}
 
-/* ---------------- Infra helpers ---------------- */
+function toNum(v) {
+  if (v == null) return undefined;
+  const n = Number(String(v).replace(/[^\d.]/g, ""));
+  return Number.isFinite(n) ? n : undefined;
+}
 
 async function fetchText(url, opts = {}) {
   const res = await fetch(url, { headers: { "user-agent": "Mozilla/5.0 ratesbot" }, ...opts });
@@ -245,7 +274,6 @@ async function withTimeout(promise, ms) {
   ]);
 }
 
-// De-dup by name; prefer entries that have a base rate
 function dedupeByName(items) {
   const m = new Map();
   for (const it of items) {
@@ -260,8 +288,6 @@ function dedupeByName(items) {
   }
   return [...m.values()];
 }
-
-/* ---------------- Fallback ---------------- */
 
 function fallbackSample() {
   const now = new Date().toISOString();
