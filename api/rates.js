@@ -84,8 +84,8 @@ async function fetchAssociatedBank() {
 // Landmark CU — try canonical path first, then fallback; allow env override; debug snippet
 async function fetchLandmarkCU({ debug = false } = {}) {
   // Env override wins instantly
-  const envRate = 6.00(process.env.LCU_RATE);
-  const envApr  = 6.072(process.env.LCU_APR);
+  const envRate = 6.625;  // <- temporary override
+  const envApr  = 6.740;  // <- temporary override
   if (inRange(envRate) || inRange(envApr)) {
     const final = normalizeRateApr(envRate, envApr);
     return baseLender("Landmark Credit Union", final.rate, final.apr, "https://landmarkcu.com/rates/mortgage-rates", 2);
