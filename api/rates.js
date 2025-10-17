@@ -1,13 +1,7 @@
 // pages/api/rates.js
-// Lenders: Associated Bank + Landmark CU + UW Credit Union.
-// Landmark parser hardened; env override; debug mode.
-//
-// Debug mode:
-//   /api/rates?debug=landmark   -> returns the snippet we parsed + numbers
-//
-// Env (optional, takes precedence for Landmark):
-//   LCU_RATE=6.125
-//   LCU_APR=6.240
+// Associated Bank + Landmark CU + UW Credit Union.
+// Landmark: try canonical URL first, then fallback; if still JS-only, use env overrides or skip.
+// Debug: /api/rates?debug=landmark returns the parsed snippet and numbers.
 
 const CACHE_TTL_MS = 10 * 60 * 1000;  // 10 minutes
 const TIMEOUT_MS   = 7000;
@@ -18,11 +12,9 @@ let CACHE = { ts: 0, data: null };
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "s-maxage=900, stale-while-revalidate=3600");
 
-  // Quick debug hook for Landmark
   const urlDebug = new URL(req.url, "http://localhost");
   const debugTarget = urlDebug.searchParams.get("debug");
 
-  // Warm in-memory cache
   const now = Date.now();
   if (!debugTarget && CACHE.data && now - CACHE.ts < CACHE_TTL_MS) {
     return res.status(200).json(CACHE.data);
@@ -35,7 +27,6 @@ export default async function handler(req, res) {
       withTimeout(fetchUWCU(), TIMEOUT_MS).catch(() => null),
     ]);
 
-    // Debug mode: show raw snippet for Landmark
     if (debugTarget === "landmark" && lcu && lcu.__debug) {
       return res.status(200).json(lcu.__debug);
     }
@@ -66,6 +57,7 @@ export default async function handler(req, res) {
 
 /* ---------------- Providers ---------------- */
 
+// Associated Bank — labeled Interest Rate/APR near "30 Year Fixed"
 async function fetchAssociatedBank() {
   const url = "https://www.associatedbank.com/personal/loans/home-loans/mortgage-rates?redir=A24";
   const html = await fetchText(url);
@@ -89,81 +81,81 @@ async function fetchAssociatedBank() {
   };
 }
 
-// Landmark CU — hardened parser with env override + debug payload
+// Landmark CU — try canonical path first, then fallback; allow env override; debug snippet
 async function fetchLandmarkCU({ debug = false } = {}) {
-  const url = "https://landmarkcu.com/mortgage-rates";
-
-  // 0) Env override wins instantly
+  // Env override wins instantly
   const envRate = toNum(process.env.LCU_RATE);
   const envApr  = toNum(process.env.LCU_APR);
   if (inRange(envRate) || inRange(envApr)) {
     const final = normalizeRateApr(envRate, envApr);
-    return {
-      name: "Landmark Credit Union",
-      product: "30 yr fixed",
-      rate: final.rate,
-      apr: final.apr,
-      url,
-      contactUrl: "https://landmarkcu.com/mortgage",
-      updatedAt: new Date().toISOString(),
-      order: 2
-    };
+    return baseLender("Landmark Credit Union", final.rate, final.apr, "https://landmarkcu.com/rates/mortgage-rates", 2);
   }
 
-  // 1) Live parse
-  const html = await fetchText(url);
-  const clean = html.replace(/\s+/g, " ");
-  // Landmark sometimes puts the product text like "30 Year Fixed" or "Fixed 30 Year"
-  const block = captureAroundAny(clean, [
-    /30\s*(?:year|yr)\s*(?:fixed)/i,
-    /fixed\s*30\s*(?:year|yr)/i
-  ], 2000);
+  // Try canonical path first (their meta showed /rates/mortgage-rates)
+  const candidates = [
+    "https://landmarkcu.com/rates/mortgage-rates",
+    "https://landmarkcu.com/mortgage-rates"
+  ];
 
-  // Strategy: try in this order
-  // A) Labeled "Rate" and "APR" nearby
-  let rate = findPercent(block, /(Interest\s*Rate|^|\bRate\b)[^0-9]{0,24}([0-9]{1,2}\.[0-9]{1,3})\s*%/i);
-  let apr  = findPercent(block, /\bAPR\b[^0-9]{0,24}([0-9]{1,2}\.[0-9]{1,3})\s*%/i);
+  let chosenUrl = null;
+  let block = "";
+  let parsedRate = null, parsedApr = null, duo = null;
 
-  // B) Table-like capture: cells after the product name contain two percents
-  if (rate == null || apr == null) {
-    const row = block.match(/(?:30\s*(?:year|yr)\s*fixed|fixed\s*30\s*(?:year|yr))[^%]{0,500}?([0-9]{1,2}\.[0-9]{1,3})\s*%[^%]{0,120}?([0-9]{1,2}\.[0-9]{1,3})\s*%/i);
-    if (row) {
-      const a = parseFloat(row[1]), b = parseFloat(row[2]);
-      if (isFinite(a) && isFinite(b)) {
-        // smaller is base, bigger is APR
-        rate = trim(Math.min(a, b));
-        apr  = trim(Math.max(a, b));
+  for (const url of candidates) {
+    try {
+      const html = await fetchText(url);
+      const clean = html.replace(/\s+/g, " ");
+      // capture around 30 year fixed or fixed 30 year
+      block = captureAroundAny(clean, [
+        /30\s*(?:year|yr)\s*(?:fixed)/i,
+        /fixed\s*30\s*(?:year|yr)/i
+      ], 2200);
+
+      parsedRate = findPercent(block, /(Interest\s*Rate|^|\bRate\b)[^0-9]{0,24}([0-9]{1,2}\.[0-9]{1,3})\s*%/i);
+      parsedApr  = findPercent(block, /\bAPR\b[^0-9]{0,24}([0-9]{1,2}\.[0-9]{1,3})\s*%/i);
+
+      if (parsedRate == null || parsedApr == null) {
+        const row = block.match(/(?:30\s*(?:year|yr)\s*fixed|fixed\s*30\s*(?:year|yr))[^%]{0,500}?([0-9]{1,2}\.[0-9]{1,3})\s*%[^%]{0,120}?([0-9]{1,2}\.[0-9]{1,3})\s*%/i);
+        if (row) {
+          const a = parseFloat(row[1]), b = parseFloat(row[2]);
+          if (isFinite(a) && isFinite(b)) {
+            parsedRate = trim(Math.min(a, b));
+            parsedApr  = trim(Math.max(a, b));
+          }
+        }
       }
+
+      if (parsedRate == null || parsedApr == null) {
+        duo = twoPercentsNearby(block);
+      }
+
+      if ((parsedRate || parsedApr || duo)) {
+        chosenUrl = url;
+        break; // we got something usable on this candidate URL
+      }
+    } catch {
+      // try next candidate
     }
   }
 
-  // C) Last resort: two percents near each other in the block
-  const duo = (rate == null || apr == null) ? twoPercentsNearby(block) : null;
-  const final = normalizeRateApr(pick(rate, duo?.base), pick(apr, duo?.apr));
-
-  const payload = {
-    name: "Landmark Credit Union",
-    product: "30 yr fixed",
-    rate: final.rate,
-    apr: final.apr,
-    url,
-    contactUrl: "https://landmarkcu.com/mortgage",
-    updatedAt: new Date().toISOString(),
-    order: 2
-  };
-
-  if (debug) {
-    payload.__debug = {
-      message: "Landmark parser debug",
-      snippet: block.slice(0, 1200),
-      parsed: { rate, apr, duo },
-      final
-    };
+  // If neither URL produced numbers, return debug payload or null to skip
+  if (!chosenUrl) {
+    if (debug) {
+      return { __debug: { message: "Landmark parser debug (no SSR numbers)", snippet: block.slice(0, 1000), parsed: { rate: parsedRate, apr: parsedApr, duo } } };
+    }
+    return null; // skip Landmark so we don't lie
   }
 
+  const final = normalizeRateApr(pick(parsedRate, duo?.base), pick(parsedApr, duo?.apr));
+
+  const payload = baseLender("Landmark Credit Union", final.rate, final.apr, chosenUrl, 2);
+  if (debug) {
+    payload.__debug = { message: "Landmark parser debug", snippet: block.slice(0, 1200), parsed: { rate: parsedRate, apr: parsedApr, duo }, final };
+  }
   return payload;
 }
 
+// UW Credit Union — “30-Year Fixed Rate Purchase” block
 async function fetchUWCU() {
   const url = "https://www.uwcu.org/mortgage-home-loans/options/fixed-rate";
   const html = await fetchText(url);
@@ -190,6 +182,19 @@ async function fetchUWCU() {
 }
 
 /* ---------------- Helpers ---------------- */
+
+function baseLender(name, rate, apr, url, order) {
+  return {
+    name,
+    product: "30 yr fixed",
+    rate,
+    apr,
+    url,
+    contactUrl: url,
+    updatedAt: new Date().toISOString(),
+    order
+  };
+}
 
 function extractThirtyYearBlock(html) {
   const clean = html.replace(/\s+/g, " ");
@@ -229,7 +234,6 @@ function twoPercentsNearby(txt) {
 }
 
 function normalizeRateApr(rate, apr) {
-  // use whichever is present; if both, ensure APR >= base
   if (rate != null && apr == null) return { rate, apr: undefined };
   if (rate == null && apr != null) return { rate: apr, apr };
   if (rate != null && apr != null) {
@@ -289,6 +293,8 @@ function dedupeByName(items) {
   return [...m.values()];
 }
 
+/* ---------------- Fallback (only used if EVERYTHING fails) ---------------- */
+
 function fallbackSample() {
   const now = new Date().toISOString();
   return [
@@ -307,7 +313,7 @@ function fallbackSample() {
       product: "30 yr fixed",
       rate: "6.875",
       apr:  "6.990",
-      url: "https://landmarkcu.com/mortgage-rates",
+      url: "https://landmarkcu.com/rates/mortgage-rates",
       contactUrl: "https://landmarkcu.com/mortgage",
       updatedAt: now,
       order: 2
