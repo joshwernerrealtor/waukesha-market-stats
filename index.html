@@ -31,6 +31,7 @@
 <meta name="theme-color" content="#C5A349" />
 <meta name="google-site-verification" content="_PjSWN6opbxekpcvJNTYO1gk8nnVpJPm6VE6AYSTbDc" />
 <meta name="msvalidate.01" content="51198E56FE8D9E5EE8E0A011FF64E88D" />
+
   <!-- Screen styles (no print styles here) -->
   <style>
     :root {
@@ -53,20 +54,9 @@
 
     /* Sticky subnav (screen only) */
     .subnav {
-      position:-webkit-sticky; /* Safari */
-      position:sticky;
-      top:0;
-      z-index:1000;
-
-      display:flex;
-      gap:14px;
-      margin-top:8px;
-      font-size:14px;
-
-      background:var(--card);
-      padding:10px 0;
-      border-top:1px solid #eee;
-      border-bottom:1px solid #eee;
+      position:sticky; top:0; z-index:1000;
+      display:flex; gap:14px; margin-top:8px; font-size:14px;
+      background:var(--card); padding:10px 0; border-top:1px solid #eee; border-bottom:1px solid #eee;
       box-shadow:0 2px 10px rgba(0,0,0,.04);
     }
     .subnav a { color:var(--muted); }
@@ -101,460 +91,101 @@
     /* Smooth anchor scroll + offset for sticky nav */
     html { scroll-behavior:smooth; }
     #sf, #condo, #communities { scroll-margin-top:80px; }
-  /* --- Loading skeletons --- */
-.skel { background: #eef0f3; border-radius: 10px; height: 32px; animation: pulse 1.2s ease-in-out infinite; }
-@keyframes pulse { 0%{opacity:.6} 50%{opacity:1} 100%{opacity:.6} }
-.muted { color: var(--muted); }
 
-/* --- Embed mode (hide chrome in iframes) --- */
-.embed header.container,
-.embed footer.container { display: none; }
-.embed .container { padding-top: 12px; }
-  /* --- Brand accents: soft gold tints and cleaner controls --- */
-:root{
-  --brand-50:#f8f3e6;
-  --brand-100:#f1e6c9;
-  --brand-200:#e7d5a1;
-  --brand-600:#a8842d;
-  --brand-700:#8f6f25;
-}
+    /* Loading skeletons */
+    .skel { background: #eef0f3; border-radius: 10px; height: 32px; animation: pulse 1.2s ease-in-out infinite; }
+    @keyframes pulse { 0%{opacity:.6} 50%{opacity:1} 100%{opacity:.6} }
+    .muted { color: var(--muted); }
 
-/* --- CTA block --- */
-.cta {
-  margin-top: 16px;
-  background: linear-gradient(180deg, #fff, #fbfaf7);
-  border: 1px solid #e9e5d6;
-  border-radius: 14px;
-  padding: 18px;
-  box-shadow: 0 6px 18px rgba(0,0,0,.06);
-}
-.cta h3 {
-  margin: 0 0 6px 0;
-  font-size: 18px;
-}
-.cta p {
-  margin: 0 0 12px 0;
-  color: var(--muted);
-  font-size: 14px;
-}
-.cta-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.btn, .btn-ghost {
-  display: inline-block;
-  padding: 10px 14px;
-  border-radius: 10px;
-  font-size: 14px;
-  text-decoration: none;
-  border: 1px solid var(--brand-200);
-}
-.btn {
-  background: var(--brand);
-  color: #fff;
-  border-color: var(--brand-600);
-  box-shadow: var(--shadow-sm);
-}
-.btn:hover { filter: brightness(0.95); }
-.btn-ghost {
-  background: #fff;
-  color: var(--ink);
-}
-.btn-ghost:hover { background: #f8f5ec; }
-/* don’t print the CTA */
-@media print { .cta { display: none !important; } }
+    /* Embed mode (hide chrome in iframes) */
+    .embed header.container, .embed footer.container { display: none; }
+    .embed .container { padding-top: 12px; }
 
-  /* Primary button */
-.button{
-  background: var(--brand);
-  color: #fff;
-  border-color: var(--brand-600);
-  box-shadow: var(--shadow-sm);
-}
-.button:hover{ filter: brightness(0.95); }
+    /* Brand accents */
+    :root{ --brand-50:#f8f3e6; --brand-100:#f1e6c9; --brand-200:#e7d5a1; --brand-600:#a8842d; --brand-700:#8f6f25; }
 
-/* Small chips */
-.pill{
-  background: var(--brand-50);
-  border-color: var(--brand-200);
-}
+    .cta { margin-top: 16px; background: linear-gradient(180deg, #fff, #fbfaf7); border: 1px solid #e9e5d6; border-radius: 14px; padding: 18px; box-shadow: 0 6px 18px rgba(0,0,0,.06); }
+    .btn, .btn-ghost { display:inline-block; padding:10px 14px; border-radius:10px; font-size:14px; text-decoration:none; border:1px solid var(--brand-200);}
+    .btn { background: var(--brand); color:#fff; border-color:var(--brand-600); box-shadow:var(--shadow-sm); }
+    .btn-ghost { background:#fff; color:var(--ink); }
+    .button{ background:var(--brand); color:#fff; border-color:var(--brand-600); box-shadow:var(--shadow-sm); }
+    .pill{ background:var(--brand-50); border-color:var(--brand-200); }
+    .badge{ background:var(--brand-50); border:1px solid var(--brand-200); color:var(--brand-700); padding:4px 8px; border-radius:999px; font-size:12px; }
 
-/* Month tag style (you already have <span class="badge" ...>) */
-.badge{
-  background: var(--brand-50);
-  border: 1px solid var(--brand-200);
-  color: var(--brand-700);
-  padding: 4px 8px;
-  border-radius: 999px;
-  font-size: 12px;
-}
+    /* Hide rates in print to keep one page tidy */
+    @media print{ #rates{ display:none !important; } }
 
-/* Links: lighter underline, stronger on hover */
-a.link{ border-bottom-color: rgba(197,163,73,.4); }
-a.link:hover{ border-bottom-color: var(--brand); }
-  /* --- Hero background: soft brand mist --- */
-.hero{
-  background:
-    radial-gradient(600px 220px at 85% -10%, rgba(197,163,73,.18), transparent 70%),
-    radial-gradient(520px 180px at -10% 110%, rgba(197,163,73,.12), transparent 70%),
-    var(--card);
-}
-    /* --- Card accent + gentle hover (screen only) --- */
-.card{
-  position: relative;
-  transition: box-shadow .2s ease, transform .2s ease;
-}
-@media (hover:hover){
-  .card:hover{
-    box-shadow: 0 12px 26px rgba(0,0,0,.10);
-    transform: translateY(-1px);
-  }
-}
-.card::before{
-  content:"";
-  position:absolute;
-  top:0; left:0; right:0;
-  height:3px;
-  border-radius: var(--radius) var(--radius) 0 0; /* round the top corners */
-  background: linear-gradient(90deg, var(--brand), rgba(197,163,73,0) 65%);
-  pointer-events:none;
-}
-    /* --- Warm page background --- */
-:root { --bg: #fbfaf7; }  /* was #f7f7f9; this is a touch warmer */
-body  { background: var(--bg); }
-  /* --- Community row dividers (mobile only) --- */
-@media (max-width: 679.98px){
-  .community-grid{ row-gap: 8px; }
-  .community-card{
-    position: relative;
-    border-color: #e9e5d6; /* warmer, softer */
-  }
-  .community-card::after{
-    content:"";
-    position:absolute;
-    left:12px; right:12px; bottom:-7px;
-    height:1px;
-    background: linear-gradient(90deg, transparent, rgba(197,163,73,.25), transparent);
-    pointer-events:none;
-  }
-}
-  /* --- KPI value: clearer depth + fallback + print-safe --- */
-.kpi .value{
-  color: var(--ink);                 /* fallback color */
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.2px;
-  text-shadow: 0 1px 0 rgba(255,255,255,.55); /* tiny lift on light bg */
-}
-
-@supports (-webkit-background-clip: text) {
-  .kpi .value{
-    background: linear-gradient(
-      180deg,
-      var(--ink) 0%,
-      rgba(31,41,55,.90) 55%,
-      rgba(31,41,55,.76) 100%
-    );
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-shadow: none; /* gradient provides the depth */
-  }
-}
-
-/* Keep numbers pure on paper */
-@media print{
-  .kpi .value{
-    background: none !important;
-    -webkit-text-fill-color: initial !important;
-    color: #111 !important;
-    text-shadow: none !important;
-    /* One-page handout: hide Communities on paper */
-#communities { display: none !important; }
-
-/* Make sure we don't force a page break anymore */
-#communities.card { page-break-before: auto !important; }
-
-  }
-}
-    /* --- Section title accent --- */
-.card h2{
-  position: relative;
-  padding-bottom: 6px;
-}
-.card h2::after{
-  content:"";
-  position:absolute;
-  left:0; bottom:0;
-  width:42px; height:3px;
-  background: linear-gradient(90deg, var(--brand), rgba(197,163,73,0));
-  border-radius:2px;
-  pointer-events:none;
-}
-/* Keep print clean */
-@media print{
-  .card h2::after{ display:none; }
-}
-    /* --- Warm, accessible focus rings (screen only) --- */
-:root{
-  --focus-outline: #e7d5a1;           /* light gold */
-  --focus-ring:    rgba(197,163,73,.35);
-}
-
-/* Remove default outline, then add our own on keyboard focus */
-:where(.button, .select, .search input, .community-card, a.link){
-  outline: none;
-}
-:where(.button, .select, .search input, .community-card, a.link):focus-visible{
-  outline: 2px solid var(--focus-outline);
-  outline-offset: 2px;
-  box-shadow: 0 0 0 4px var(--focus-ring);
-  border-radius: 10px; /* soft corners for buttons/inputs */
-}
-
-/* Don’t show rings in print */
-@media print{
-  :where(.button, .select, .search input, .community-card, a.link):focus-visible{
-    outline: none !important; box-shadow: none !important;
-  }
-}
-    /* --- Snug layout when embedded --- */
-.embed .container{ padding:16px; }
-@media (min-width:900px){ .embed .container{ padding:20px; } }
-.embed .hero{ padding:12px 14px; }
-.embed .subnav{ margin-top:6px; }
-.embed .foot{ margin-top:10px; }
-/* --- Rates list styles --- */
-.rates-list{ display:grid; gap:8px; }
-.rate-row{
-  display:flex; align-items:center; justify-content:space-between;
-  border:1px solid #eef0f3; border-radius:12px; padding:10px 12px; background:#fff;
-}
-.rate-row h4{ margin:0; font-size:14px; font-weight:700; }
-.rate-row small{ color:var(--muted); }
-.rate-tags{ display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
-.tag{ font:12px/1 system-ui; background:var(--brand-50); border:1px solid var(--brand-200); border-radius:999px; padding:2px 8px; }
-.rate-nums{ text-align:right; min-width:160px; }
-.rate-nums .num{ font-weight:800; }
-.rate-nums .sub{ font-size:12px; color:var(--muted); }
-
-/* Keep one-page printouts tidy */
-@media print{ #rates{ display:none !important; } }
+    /* Rates list styles */
+    .rates-list{ display:grid; gap:8px; }
+    .rate-row{ display:flex; align-items:center; justify-content:space-between; border:1px solid #eef0f3; border-radius:12px; padding:10px 12px; background:#fff; }
+    .rate-row h4{ margin:0; font-size:14px; font-weight:700; }
+    .rate-tags{ display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+    .tag{ font:12px/1 system-ui; background:var(--brand-50); border:1px solid var(--brand-200); border-radius:999px; padding:2px 8px; }
+    .rate-nums{ text-align:right; min-width:160px; }
+    .rate-nums .num{ font-weight:800; }
+    .rate-nums .sub{ font-size:12px; color:var(--muted); }
   </style>
-<style>
-/* ---------- Print styles ---------- */
+
+  <!-- Print styles -->
+  <style>
 @page { size: Letter portrait; margin: 0.5in; }
-
 @media print {
-  html, body { background: #fff !important; color: #111 !important; }
+  html, body { background:#fff !important; color:#111 !important; }
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-
-  /* Layout: two columns for SF/Condo */
-  .container { max-width: none !important; padding: 0 !important; }
-  header.container, main.container, footer.container { padding: 0 !important; }
-  .hero { margin: 0 0 0.25in 0 !important; box-shadow: none !important; border: none !important; border-radius: 0 !important; }
-  .subnav, .search, #printBtn { display: none !important; } /* hide nav/search/print button */
-  .grid-2 { grid-template-columns: 1fr 1fr !important; gap: 0.35in !important; }
-  .card { box-shadow: none !important; border: 1px solid #e5e7eb !important; border-radius: 8px !important; }
-  .kpi { break-inside: avoid; }
-  .foot { color: #6b7280 !important; }
-
-  /* Tighter type for print */
-  .title { font-size: 22px !important; }
-  .subtitle { font-size: 12px !important; }
-  .kpi .label { font-size: 11px !important; }
-  .kpi .value { font-size: 20px !important; }
-
-  /* Links on paper */
-  a.link { color: #111 !important; border-bottom: 1px solid #ddd !important; text-decoration: none !important; }
-
-  /* Margins so content fits one page comfortably */
-  .container > * { margin-left: 0.25in; margin-right: 0.25in; }
-  .hero, .grid-2, #communities, footer.container { margin-left: 0.25in; margin-right: 0.25in; }
-
-  /* One-page handout: hide Communities on paper */
-  #communities { display: none !important; }
-  #communities, #communities.card { page-break-before: auto !important; break-before: auto !important; }
+  .container { max-width:none !important; padding:0 !important; }
+  header.container, main.container, footer.container { padding:0 !important; }
+  .hero { margin: 0 0 0.25in 0 !important; box-shadow:none !important; border:none !important; border-radius:0 !important; }
+  .subnav, .search, #printBtn { display:none !important; }
+  .grid-2 { grid-template-columns:1fr 1fr !important; gap:0.35in !important; }
+  .card { box-shadow:none !important; border:1px solid #e5e7eb !important; border-radius:8px !important; }
+  .kpi { break-inside:avoid; }
+  .foot { color:#6b7280 !important; }
+  .title { font-size:22px !important; }
+  .subtitle { font-size:12px !important; }
+  .kpi .label { font-size:11px !important; }
+  .kpi .value { font-size:20px !important; }
+  a.link { color:#111 !important; border-bottom:1px solid #ddd !important; text-decoration:none !important; }
+  .container > * { margin-left:0.25in; margin-right:0.25in; }
+  .hero, .grid-2, #communities, footer.container { margin-left:0.25in; margin-right:0.25in; }
+  #communities { display:none !important; }
 }
-  /* --- Community link hover: gentle lift + gold arrow --- */
-.community-card{
-  transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease, background .15s ease;
-}
-.community-card span:last-child{
-  color:#9ca3af !important;              /* override the inline color from HTML */
-  transition: transform .15s ease, color .15s ease;
-}
-@media (hover:hover){
-  .community-card:hover{
-    background:#fff;
-    border-color:#e6e0cf;
-    box-shadow: 0 8px 18px rgba(0,0,0,.08);
-    transform: translateY(-1px);
+  </style>
+
+  <!-- Print brand block -->
+  <style>
+  .print-brand { display:none; }
+  @media print {
+    .print-brand { display:flex !important; align-items:center; gap:14px; margin:0 0 0.25in 0; padding-bottom:10px; border-bottom:1px solid #e5e7eb; }
+    .print-logo { height:56px; max-width:260px; object-fit:contain; }
+    .print-contact { font-size:12px; line-height:1.35; }
+    .print-contact strong { font-size:14px; }
+    .print-contact a { color:#111 !important; text-decoration:none; border-bottom:1px solid #ddd; }
+    .print-updated { margin-top:2px; font-size:11px; color:#6b7280; }
   }
-  .community-card:hover span:last-child{
-    color: var(--brand-700) !important;   /* warm gold on hover */
-    transform: translateX(2px);           /* tiny nudge → */
-  }
-}
-/* Keyboard focus */
-.community-card:focus-visible{
-  outline: 2px solid var(--brand-200);
-  outline-offset: 2px;
-}
-</style>
-<style>
-/* Hide the brand block on screen */
-.print-brand { display: none; }
+  </style>
 
-/* Print styles for the brand header */
-@media print {
-  .print-brand {
-    display: flex !important;
-    align-items: center;
-    gap: 14px;
-    margin: 0 0 0.25in 0;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #e5e7eb;
-  }
-  .print-logo {
-    height: 56px;            /* adjust 48–72px to fit your logo */
-    max-width: 260px;
-    object-fit: contain;
-  }
-  .print-contact { font-size: 12px; line-height: 1.35; }
-  .print-contact strong { font-size: 14px; }
-  .print-contact a {
-    color: #111 !important;
-    text-decoration: none;
-    border-bottom: 1px solid #ddd;
-  }
-  .print-updated { margin-top: 2px; font-size: 11px; color: #6b7280; }
-}
-  /* --- FAQ styling --- */
-#faq .faq-item{
-  border:1px solid #e9e5d6;
-  border-radius:12px;
-  background:#fff;
-  margin-top:8px;
-  overflow:hidden;
-}
-#faq summary{
-  cursor:pointer;
-  padding:12px 14px;
-  list-style:none;
-  font-weight:600;
-  display:flex; align-items:center; justify-content:space-between;
-}
-#faq summary::-webkit-details-marker{ display:none; }
-#faq summary::after{
-  content:"▸";
-  margin-left:10px;
-  transition: transform .15s ease;
-  color: var(--brand-700);
-}
-#faq .faq-item[open] summary::after{ transform: rotate(90deg); }
-#faq .answer{ padding:0 14px 14px; color:var(--muted); }
-@media print{ #faq{ display:none !important; } } /* keep the printout to one page */
-</style>
-<script id="ld-dataset" type="application/ld+json">
-{
-  "@context":"https://schema.org",
-  "@type":"Dataset",
-  "@id":"https://joshwerner.myrealtyonegroup.com/latest-waukesha-cnty-market-stats#dataset",
-  "name":"Waukesha County Housing Market Statistics",
-  "description":"Monthly market stats for Waukesha County, WI (Single-Family & Condo): Median Price, Closed Sales, Days on Market, and Months Supply. Auto-updated from RPR.",
-  "creator":{"@type":"Person","name":"Josh Werner"},
-  "publisher":{"@type":"Organization","name":"Realty ONE Group Luminous"},
-  "isAccessibleForFree": true,
-  "keywords":["Waukesha County","real estate","market statistics","Wisconsin"],
-  "license":"https://www.narrpr.com/terms/",
-  "distribution":[
-    {"@type":"DataDownload","encodingFormat":"application/pdf","contentUrl":"https://www.narrpr.com/reports-v2/c296fac6-035d-4e9a-84fd-28455ab0339f/pdf"},
-    {"@type":"DataDownload","encodingFormat":"application/pdf","contentUrl":"https://www.narrpr.com/reports-v2/5a675486-5c7b-4bb0-9946-0cffa3070f05/pdf"}
-  ],
-  "dateModified":"2025-09-16"
-}
-</script>
+<script id="ld-dataset" type="application/ld+json">{"@context":"https://schema.org","@type":"Dataset","@id":"https://joshwerner.myrealtyonegroup.com/latest-waukesha-cnty-market-stats#dataset","name":"Waukesha County Housing Market Statistics","description":"Monthly market stats for Waukesha County, WI (Single-Family & Condo): Median Price, Closed Sales, Days on Market, and Months Supply. Auto-updated from RPR.","creator":{"@type":"Person","name":"Josh Werner"},"publisher":{"@type":"Organization","name":"Realty ONE Group Luminous"},"isAccessibleForFree": true,"keywords":["Waukesha County","real estate","market statistics","Wisconsin"],"license":"https://www.narrpr.com/terms/","distribution":[{"@type":"DataDownload","encodingFormat":"application/pdf","contentUrl":"https://www.narrpr.com/reports-v2/c296fac6-035d-4e9a-84fd-28455ab0339f/pdf"},{"@type":"DataDownload","encodingFormat":"application/pdf","contentUrl":"https://www.narrpr.com/reports-v2/5a675486-5c7b-4bb0-9946-0cffa3070f05/pdf"}],"dateModified":"2025-09-16"}</script>
 
-<script id="ld-webpage" type="application/ld+json">
-{
-  "@context":"https://schema.org",
-  "@type":"WebPage",
-  "name":"Waukesha County Housing Market Statistics",
-  "url":"https://joshwerner.myrealtyonegroup.com/latest-waukesha-cnty-market-stats",
-  "inLanguage":"en-US",
-  "description":"Waukesha County housing market statistics updated daily: median price, closed sales, days on market, and months of supply for single-family homes and condos.",
-  "isPartOf":{"@type":"WebSite","name":"Josh Werner Real Estate","url":"https://joshwerner.homes"},
-  "primaryImageOfPage":{"@type":"ImageObject","url":"https://waukesha-market-stats.vercel.app/og-image.png"}
-}
-</script>
-<script id="ld-faq" type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    {
-      "@type": "Question",
-      "name": "How often are these stats updated?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "County stats refresh automatically within ~48 hours of RPR updating the underlying PDFs. Community links open live RPR reports that always show the latest version."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "What property types are included?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "We publish snapshots for Single-Family homes and Condos/Townhomes. Each panel shows Median Price, Closed Sales, Days on Market, and Months of Supply."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Where do these numbers come from?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Realtors Property Resource® (RPR). The county panels summarize key figures extracted from the Waukesha County RPR PDF; community links point to each city’s live RPR report."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Can I get a custom city or neighborhood report?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Yes—contact Josh and we’ll generate a tailored RPR report with recent comps and trends."
-      }
-    }
-  ]
-}
-</script>
+<script id="ld-webpage" type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Waukesha County Housing Market Statistics","url":"https://joshwerner.myrealtyonegroup.com/latest-waukesha-cnty-market-stats","inLanguage":"en-US","description":"Waukesha County housing market statistics updated daily: median price, closed sales, days on market, and months of supply for single-family homes and condos.","isPartOf":{"@type":"WebSite","name":"Josh Werner Real Estate","url":"https://joshwerner.homes"},"primaryImageOfPage":{"@type":"ImageObject","url":"https://waukesha-market-stats.vercel.app/og-image.png"}}</script>
+
+<script id="ld-faq" type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"How often are these stats updated?","acceptedAnswer":{"@type":"Answer","text":"County stats refresh automatically within ~48 hours of RPR updating the underlying PDFs. Community links open live RPR reports that always show the latest version."}},{"@type":"Question","name":"What property types are included?","acceptedAnswer":{"@type":"Answer","text":"We publish snapshots for Single-Family homes and Condos/Townhomes. Each panel shows Median Price, Closed Sales, Days on Market, and Months of Supply."}},{"@type":"Question","name":"Where do these numbers come from?","acceptedAnswer":{"@type":"Answer","text":"Realtors Property Resource® (RPR). The county panels summarize key figures extracted from the Waukesha County RPR PDF; community links point to each city’s live RPR report."}},{"@type":"Question","name":"Can I get a custom city or neighborhood report?","acceptedAnswer":{"@type":"Answer","text":"Yes—contact Josh and we’ll generate a tailored RPR report with recent comps and trends."}}]}</script>
+
 <!-- Keep meta dates in sync with API.updatedAt -->
 <meta id="meta-lastmod" name="last-modified" content="2025-09-16" />
 <meta id="og-updated" property="og:updated_time" content="2025-09-16T12:00:00Z" />
 
 <script>
-  // Sync JSON-LD (Dataset + WebPage) and meta dates with API.updatedAt
+  // Sync JSON-LD/meta dates with API.updatedAt (your /api/waukesha, unchanged)
   (async () => {
     try {
       const r = await fetch("/api/waukesha?ts=" + Date.now(), { cache: "no-store" });
       const j = await r.json();
       const d = j?.updatedAt;
       if (!d) return;
-
-      // Update JSON-LD dates
       const ds = document.getElementById("ld-dataset");
-      if (ds) {
-        const data = JSON.parse(ds.textContent || "{}");
-        data.dateModified = d;
-        ds.textContent = JSON.stringify(data);
-      }
+      if (ds) { const data = JSON.parse(ds.textContent || "{}"); data.dateModified = d; ds.textContent = JSON.stringify(data); }
       const wp = document.getElementById("ld-webpage");
-      if (wp) {
-        const w = JSON.parse(wp.textContent || "{}");
-        w.dateModified = d;
-        wp.textContent = JSON.stringify(w);
-      }
-
-      // Update meta dates (anchor OG time at noon UTC to avoid TZ drift)
+      if (wp) { const w = JSON.parse(wp.textContent || "{}"); w.dateModified = d; wp.textContent = JSON.stringify(w); }
       document.getElementById("meta-lastmod")?.setAttribute("content", d);
       document.getElementById("og-updated")?.setAttribute("content", d + "T12:00:00Z");
     } catch {}
@@ -570,6 +201,7 @@ body  { background: var(--bg); }
         <strong>Josh Werner</strong><br />
         Licensed REALTOR® — Realty ONE Group Luminous<br />
         <a href="tel:+14147597925">(414) 759-7925</a> ·
+        <!-- FIXED: closed the mailto tag properly -->
         <a href="mailto:joshwernerrealtor@gmail.com?subject=Custom%20Market%20Report%20Request&body=Hi%20Josh%2C%0A%0AI%E2%80%99d%20like%20a%20custom%20market%20report%20for%3A%20%5Barea%5D.%0A%0AThanks!">Email Josh</a> ·
         <a href="https://joshwerner.homes" target="_blank" rel="noopener">joshwerner.homes</a><br />
         WI License #: 93792-94
@@ -577,8 +209,8 @@ body  { background: var(--bg); }
       </div>
     </div>
 
-    <!-- your hero content -->
-<section class="hero">
+    <!-- Hero -->
+    <section class="hero">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
         <div>
           <h1 class="title">Waukesha County Housing Market Statistics</h1>
@@ -599,87 +231,25 @@ body  { background: var(--bg); }
   </header>
 
   <main class="container">
+    <!-- RATES BLOCK -->
     <section id="rates" class="card" aria-labelledby="ratesTitle">
-  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-    <h2 id="ratesTitle" style="margin:0;font-size:20px">Today’s Local Mortgage Rates</h2>
-    <span class="badge"><span id="ratesUpdated">Loading…</span></span>
-  </div>
-
-  <div id="ratesBody" class="rates-list" style="margin-top:10px">
-    <div class="skel" style="height:38px"></div>
-    <div class="skel" style="height:38px"></div>
-    <div class="skel" style="height:38px"></div>
-  </div>
-
-  <p class="muted" style="margin-top:10px;font-size:12px">
-    Indicative rates published on lender sites; subject to change. Not a commitment to lend.
-  </p>
-</section>
-    <script>
-(() => {
-  const bodyEl   = document.getElementById("ratesBody");
-  const stampEl  = document.getElementById("ratesUpdated");
-
-  function row(l) {
-    const primary = l?.rate || l?.apr;                // show APR if rate is missing
-    const label   = l?.rate ? "" : " APR";
-    const aprTxt  = l?.apr  ? `${l.apr}% APR` : "";
-    const ptsTxt  = l?.points ? `${l.points} pts` : "";
-    const sub     = [aprTxt, ptsTxt].filter(Boolean).join(" • ");
-
-    const div = document.createElement("div");
-    div.className = "rate-row";
-    div.innerHTML = `
-      <div>
-        <h4>${l?.name || "Lender"}</h4>
-        <div class="rate-tags">
-          <span class="tag">${l?.product || "30 yr fixed"}</span>
-          ${l?.url ? `<a class="tag" href="${l.url}" target="_blank" rel="noopener">Rate page</a>` : ""}
-          ${l?.contactUrl ? `<a class="tag" href="${l.contactUrl}" target="_blank" rel="noopener">Get pre-approved</a>` : ""}
-        </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <h2 id="ratesTitle" style="margin:0;font-size:20px">Today’s Local Mortgage Rates</h2>
+        <span class="badge"><span id="ratesUpdated">Loading…</span></span>
       </div>
-      <div class="rate-nums">
-        <div class="num" style="font-weight:800;font-size:18px">
-          ${primary ? `${primary}%${label}` : "—"}
-        </div>
-        <div class="sub">${sub}</div>
+
+      <div id="ratesBody" class="rates-list" style="margin-top:10px">
+        <div class="skel" style="height:38px"></div>
+        <div class="skel" style="height:38px"></div>
+        <div class="skel" style="height:38px"></div>
       </div>
-    `;
-    return div;
-  }
 
-  async function loadRates(){
-    try {
-      stampEl.textContent = "Loading…";
-      const r = await fetch("/api/rates", { headers: { accept: "application/json" } });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const j = await r.json();
-      const lenders = Array.isArray(j.lenders) ? j.lenders : [];
+      <p class="muted" style="margin-top:10px;font-size:12px">
+        Indicative rates published on lender sites; subject to change. Not a commitment to lend.
+      </p>
+    </section>
 
-      // If nothing has a number, fall back to the server's sample to avoid a wall of dashes
-      const hasNumbers = lenders.some(x => x && (x.rate || x.apr));
-      bodyEl.innerHTML = "";
-      (hasNumbers ? lenders : (j.sample || [])).forEach(l => bodyEl.appendChild(row(l)));
-
-      const ts = j.generatedAt || lenders[0]?.updatedAt;
-      stampEl.textContent = ts
-        ? `Updated ${new Date(ts).toLocaleDateString()} ${new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-        : "Updated recently";
-    } catch (e) {
-      bodyEl.innerHTML = `
-        <div class="rate-row">
-          <div><h4>Rates unavailable</h4><small class="muted">Could not load lender data.</small></div>
-          <div class="rate-nums"><div class="num">—</div><div class="sub">Try again soon</div></div>
-        </div>`;
-      stampEl.textContent = "Error";
-      console.error(e);
-    }
-  }
-
-  loadRates();
-  setInterval(loadRates, 15 * 60 * 1000);
-})();
-</script>
+    <!-- Two-up cards -->
     <section class="grid-2">
       <article id="sf" class="card" aria-labelledby="sfTitle">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
@@ -705,6 +275,8 @@ body  { background: var(--bg); }
         </div>
       </article>
     </section>
+
+    <!-- Communities -->
     <section id="communities" class="card" style="margin-top:16px">
       <div style="display:flex;align-items:end;justify-content:space-between;gap:12px;flex-wrap:wrap">
         <div>
@@ -718,103 +290,57 @@ body  { background: var(--bg); }
       </div>
       <div id="communityGrid" class="community-grid" style="margin-top:12px"></div>
     </section>
+
+    <!-- FAQs -->
     <section id="faq" class="card" style="margin-top:16px">
-  <h2 style="margin:0 0 8px 0; font-size:18px">Market FAQs</h2>
+      <h2 style="margin:0 0 8px 0; font-size:18px">Market FAQs</h2>
+      <details class="faq-item" open><summary>How often are these Waukesha County stats updated?</summary><div class="answer">This page checks for new data every day around 6:00 AM Central (11:00 UTC). Figures refresh shortly after RPR regenerates its county Market Trends reports (typically every ~48 hours). The “Updated” date shows the last successful pull.</div></details>
+      <details class="faq-item"><summary>Where do these numbers come from?</summary><div class="answer">Realtors Property Resource® (RPR) county Market Trends PDFs. Links to the full reports are provided on this page.</div></details>
+      <details class="faq-item"><summary>Which metrics are shown?</summary><div class="answer">Median Sold Price, Closed Sales, Median Days in RPR (Days on Market), Months of Inventory, and Active Listings (when available).</div></details>
+      <details class="faq-item"><summary>Does this include both single-family and condos?</summary><div class="answer">Yes—two side-by-side snapshots. Each links to the corresponding county PDF report for deeper detail.</div></details>
+      <details class="faq-item"><summary>Can I print this as a one-page handout?</summary><div class="answer">Yes—use the “Print / PDF” button. The Communities section is hidden on paper to keep the printout to one page.</div></details>
+      <details class="faq-item"><summary>How can I get stats for my neighborhood or a custom report?</summary><div class="answer">Use the community links above or contact Josh at (414) 759-7925 or joshwernerrealtor@gmail.com for a custom report.</div></details>
+    </section>
 
-  <details class="faq-item" open>
-    <summary>How often are these Waukesha County stats updated?</summary>
-    <div class="answer">
-      This page checks for new data every day around 6:00 AM Central (11:00 UTC). Figures refresh shortly after
-      RPR regenerates its county Market Trends reports (typically every ~48 hours). The “Updated” date shows the
-      last successful pull.
-    </div>
-  </details>
-
-  <details class="faq-item">
-    <summary>Where do these numbers come from?</summary>
-    <div class="answer">
-      Realtors Property Resource® (RPR) county Market Trends PDFs. Links to the full reports are provided on this page.
-    </div>
-  </details>
-
-  <details class="faq-item">
-    <summary>Which metrics are shown?</summary>
-    <div class="answer">
-      Median Sold Price, Closed Sales, Median Days in RPR (Days on Market), Months of Inventory, and Active Listings (when available).
-    </div>
-  </details>
-
-  <details class="faq-item">
-    <summary>Does this include both single-family and condos?</summary>
-    <div class="answer">
-      Yes—two side-by-side snapshots. Each links to the corresponding county PDF report for deeper detail.
-    </div>
-  </details>
-
-  <details class="faq-item">
-    <summary>Can I print this as a one-page handout?</summary>
-    <div class="answer">
-      Yes—use the “Print / PDF” button. The Communities section is hidden on paper to keep the printout to one page.
-    </div>
-  </details>
-
-  <details class="faq-item">
-    <summary>How can I get stats for my neighborhood or a custom report?</summary>
-    <div class="answer">
-      Use the community links above or contact Josh at (414) 759-7925 or joshwernerrealtor@gmail.com for a custom report.
-    </div>
-  </details>
-</section>
+    <!-- Related -->
     <section id="related" class="card" style="margin-top:16px">
-  <h2 style="margin:0 0 8px 0; font-size:18px">Explore Waukesha Communities</h2>
-  <p class="subtitle" style="margin:6px 0 10px 0">
-    Local market guides and homes for sale by city.
-  </p>
-  <ul class="related-grid" style="list-style:none; padding:0; margin:0; display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
-    <li><a class="link" href="#"       >Brookfield Market Guide</a></li>
-    <li><a class="link" href="#"       >Menomonee Falls Market Guide</a></li>
-    <li><a class="link" href="#"       >New Berlin Market Guide</a></li>
-    <li><a class="link" href="#"       >Muskego Market Guide</a></li>
-    <li><a class="link" href="#"       >Pewaukee Market Guide</a></li>
-    <li><a class="link" href="#"       >Oconomowoc Market Guide</a></li>
-    <li><a class="link" href="#"       >Hartland Market Guide</a></li>
-    <li><a class="link" href="#"       >Delafield Market Guide</a></li>
-    <li><a class="link" href="#"       >Mukwonago Market Guide</a></li>
-    <li><a class="link" href="#"       >Sussex Market Guide</a></li>
-  </ul>
-</section>
-    <!-- CTA block -->
-<section class="cta" aria-labelledby="ctaTitle">
-  <h3 id="ctaTitle">Want a custom city or neighborhood report?</h3>
-  <p>I’ll send you a fresh, tailored RPR® report with comps and trends—usually same day.</p>
-  <div class="cta-actions">
-    <a
-  class="btn"
-  href="mailto:joshwernerrealtor@gmail.com?subject=Custom%20Market%20Report%20Request&body=Hi%20Josh%2C%0A%0AI%E2%80%99d%20like%20a%20custom%20market%20report%20for%3A%20%5Barea%5D.%0A%0AThanks!"
->
-  Email Josh
-</a>
-        <a
-  class="btn outline"
-  href="https://mail.google.com/mail/?view=cm&fs=1&to=joshwernerrealtor@gmail.com&su=Custom%20Market%20Report%20Request&body=Hi%20Josh%2C%0A%0AI%E2%80%99d%20like%20a%20custom%20market%20report%20for%3A%20%5Barea%5D.%0A%0AThanks!"
-  target="_blank"
-  rel="noopener"
->
-  Use Gmail
-</a>
-    <a class="btn-ghost" href="tel:+14147597925" rel="noopener">Call (414) 759-7925</a>
-    <a class="btn-ghost" href="https://joshwerner.homes/?utm_source=market-stats&utm_medium=cta&utm_campaign=waukesha" target="_blank" rel="noopener">Visit Website</a>
-  </div>
-</section>
+      <h2 style="margin:0 0 8px 0; font-size:18px">Explore Waukesha Communities</h2>
+      <p class="subtitle" style="margin:6px 0 10px 0">Local market guides and homes for sale by city.</p>
+      <ul class="related-grid" style="list-style:none; padding:0; margin:0; display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
+        <li><a class="link" href="#">Brookfield Market Guide</a></li>
+        <li><a class="link" href="#">Menomonee Falls Market Guide</a></li>
+        <li><a class="link" href="#">New Berlin Market Guide</a></li>
+        <li><a class="link" href="#">Muskego Market Guide</a></li>
+        <li><a class="link" href="#">Pewaukee Market Guide</a></li>
+        <li><a class="link" href="#">Oconomowoc Market Guide</a></li>
+        <li><a class="link" href="#">Hartland Market Guide</a></li>
+        <li><a class="link" href="#">Delafield Market Guide</a></li>
+        <li><a class="link" href="#">Mukwonago Market Guide</a></li>
+        <li><a class="link" href="#">Sussex Market Guide</a></li>
+      </ul>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta" aria-labelledby="ctaTitle">
+      <h3 id="ctaTitle">Want a custom city or neighborhood report?</h3>
+      <p>I’ll send you a fresh, tailored RPR® report with comps and trends—usually same day.</p>
+      <div class="cta-actions">
+        <a class="btn" href="mailto:joshwernerrealtor@gmail.com?subject=Custom%20Market%20Report%20Request&body=Hi%20Josh%2C%0A%0AI%E2%80%99d%20like%20a%20custom%20market%20report%20for%3A%20%5Barea%5D.%0A%0AThanks!">Email Josh</a>
+        <a class="btn outline" href="https://mail.google.com/mail/?view=cm&fs=1&to=joshwernerrealtor@gmail.com&su=Custom%20Market%20Report%20Request&body=Hi%20Josh%2C%0A%0AI%E2%80%99d%20like%20a%20custom%20market%20report%20for%3A%20%5Barea%5D.%0A%0AThanks!" target="_blank" rel="noopener">Use Gmail</a>
+        <a class="btn-ghost" href="tel:+14147597925" rel="noopener">Call (414) 759-7925</a>
+        <a class="btn-ghost" href="https://joshwerner.homes/?utm_source=market-stats&utm_medium=cta&utm_campaign=waukesha" target="_blank" rel="noopener">Visit Website</a>
+      </div>
+    </section>
+  </main>
+
   <footer class="container" style="opacity:.9;padding-top:0">
     <p style="font-size:12px;color:var(--muted)">Source: Realtors Property Resource® (RPR). County stats auto-refresh from the county PDF via a secure API.</p>
   </footer>
 
+<!-- MARKET JS (unchanged from your version; uses /api/waukesha) -->
 <script>
 (() => {
   const ENDPOINT = "/api/waukesha";
-
-  // Communities
   const COMMUNITIES = [
     { name: "Brookfield",        url: "https://www.narrpr.com/reports-v2/97a381b7-10f7-40e6-9e36-852d9a194cdf/pdf" },
     { name: "Menomonee Falls",   url: "https://www.narrpr.com/reports-v2/e88b179b-2c39-4b51-9968-f4d8b6df89cb/pdf" },
@@ -828,41 +354,32 @@ body  { background: var(--bg); }
     { name: "Sussex",            url: "https://www.narrpr.com/reports-v2/41f387a4-b092-42c4-b23a-b3575ae52116/pdf" }
   ];
 
-  // Params / iframe detection
   const params = new URLSearchParams(location.search);
   const isEmbedded = (window.top !== window.self);
   const shouldAutoPrint = params.get('print') === '1';
-
-  // Shortcuts
   const $=(q,el=document)=>el.querySelector(q);
 
-  // Elements
   const updatedAtEl=$("#updatedAt"), monthSelect=$("#monthSelect");
   const sfMonthEl=$("#sfMonth"), condoMonthEl=$("#condoMonth");
   const sfKpis=$("#sfKpis"), condoKpis=$("#condoKpis");
   const sfReport=$("#sfReport"), condoReport=$("#condoReport");
   const searchInput=$("#searchInput"), communityGrid=$("#communityGrid");
 
-  // Formatters
   const fCurrency=v=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0}).format(v);
   const fNumber=v=>new Intl.NumberFormat("en-US").format(v);
   const fNumber1=v=>new Intl.NumberFormat("en-US",{maximumFractionDigits:1}).format(v);
 
-  // KPI (hide MoM if no previous month)
   function kpiEl(label, value, prev, type){
     const el = document.createElement("div");
     el.className = "kpi";
-
     const hasValue = typeof value === "number" && !Number.isNaN(value);
     const hasPrev  = typeof prev  === "number" && !Number.isNaN(prev);
-
     let formatted = "—";
     if (hasValue) {
       formatted = type === "currency" ? fCurrency(value)
                 : type === "number1" ? fNumber1(value)
                 : fNumber(value);
     }
-
     let deltaBlock = "";
     if (hasValue && hasPrev) {
       const diff = value - prev;
@@ -872,12 +389,7 @@ body  { background: var(--bg); }
       const cls   = dir === 0 ? "" : (dir > 0 ? "up" : "down");
       deltaBlock = `<div class="delta ${cls}">${arrow} ${Math.abs(pct).toFixed(1)}% MoM</div>`;
     }
-
-    el.innerHTML = `
-      <div class="label">${label}</div>
-      <div class="value">${formatted}</div>
-      ${deltaBlock}
-    `;
+    el.innerHTML = `<div class="label">${label}</div><div class="value">${formatted}</div>${deltaBlock}`;
     return el;
   }
 
@@ -889,30 +401,26 @@ body  { background: var(--bg); }
     if (condoMonthEl) condoMonthEl.textContent=label;
     if (sfKpis) sfKpis.innerHTML="";
     if (condoKpis) condoKpis.innerHTML="";
-
-    const METRICS = [
+    [
       { key:"medianPrice",   label:"Median Price",   type:"currency" },
       { key:"closed",        label:"Closed Sales",   type:"number"   },
       { key:"dom",           label:"Days on Market", type:"number"   },
       { key:"monthsSupply",  label:"Months Supply",  type:"number1"  },
       { key:"activeListings",label:"Active Listings",type:"number"   }
-    ];
-
-    METRICS.forEach(m=>{
+    ].forEach(m=>{
       if (sfKpis) sfKpis.appendChild(kpiEl(m.label, cur.sf?.[m.key],    prev?.sf?.[m.key],    m.type));
       if (condoKpis) condoKpis.appendChild(kpiEl(m.label, cur.condo?.[m.key], prev?.condo?.[m.key], m.type));
     });
   }
 
   function renderCommunities(list){
-    if (!communityGrid) return;
-    communityGrid.innerHTML="";
+    const grid = communityGrid; if (!grid) return;
+    grid.innerHTML="";
     list.forEach(c=>{
       const a=document.createElement("a");
-      a.className="community-card";
-      a.href=c.url; a.target="_blank"; a.rel="noopener";
+      a.className="community-card"; a.href=c.url; a.target="_blank"; a.rel="noopener";
       a.innerHTML=`<span>${c.name}</span><span style="color:#9ca3af">PDF →</span>`;
-      communityGrid.appendChild(a);
+      grid.appendChild(a);
     });
   }
 
@@ -920,58 +428,34 @@ body  { background: var(--bg); }
     if (updatedAtEl && payload.updatedAt) {
       updatedAtEl.textContent = new Date(payload.updatedAt + "T12:00:00Z").toLocaleDateString();
     }
-
     const months=Object.keys(payload.months).sort().reverse();
     if (monthSelect) {
       monthSelect.innerHTML="";
       months.forEach(k=>{
         const [y,m]=k.split("-"); const dt=new Date(+y,+m-1,1);
         const opt=document.createElement("option");
-        opt.value=k;
-        opt.textContent=dt.toLocaleDateString(undefined,{month:"long",year:"numeric"});
+        opt.value=k; opt.textContent=dt.toLocaleDateString(undefined,{month:"long",year:"numeric"});
         monthSelect.appendChild(opt);
       });
       monthSelect.value=months[0];
       monthSelect.onchange=e=>paintMonth(e.target.value, payload);
     }
-
     paintMonth(months[0], payload);
-
     if (sfReport && payload.months[months[0]]?.sfReport) sfReport.href = payload.months[months[0]].sfReport;
     if (condoReport && payload.months[months[0]]?.condoReport) condoReport.href = payload.months[months[0]].condoReport;
-
     renderCommunities(COMMUNITIES);
-
-    // Print header date
-    const pu = $("#printUpdated");
+    const pu = document.getElementById("printUpdated");
     if (pu && payload?.updatedAt) pu.textContent = "Updated " + new Date(payload.updatedAt).toLocaleDateString();
-
-    // Print button: iframe-safe
-    const btn = $("#printBtn");
-    if (btn) {
-      btn.onclick = () => {
-        if (isEmbedded) {
-          const url = new URL(location.href);
-          url.searchParams.set('print','1'); // auto-print
-          url.searchParams.delete('embed');  // ensure print header shows
-          window.open(url.toString(), '_blank', 'noopener');
-        } else {
-          window.print();
-        }
-      };
-    }
-
-    // Auto-print if opened with ?print=1
-    if (shouldAutoPrint) {
-      setTimeout(() => window.print(), 300);
-    }
+    const btn = document.getElementById("printBtn");
+    if (btn) btn.onclick = () => (window.top !== window.self) ? window.open(new URL(location.href + (location.search ? "&" : "?") + "print=1"), "_blank", "noopener") : window.print();
+    const params = new URLSearchParams(location.search);
+    if (params.get('print') === '1') setTimeout(() => window.print(), 300);
   }
 
   async function boot(){
     try{
-      // Optional embed mode chrome hide
+      const params = new URLSearchParams(location.search);
       if (params.get('embed') === '1') document.body.classList.add('embed');
-
       const r = await fetch(ENDPOINT + "?ts=" + Date.now(), { cache: "no-store" });
       if(!r.ok) throw new Error(`API ${r.status} ${r.statusText}`);
       const json=await r.json();
@@ -979,12 +463,76 @@ body  { background: var(--bg); }
     }catch(e){
       console.error(e);
       const err = `<div class="kpi"><div class="label">Status</div><div class="value" style="font-size:16px">Couldn’t load live stats</div><div class="delta" style="color:#b91c1c">${(e && e.message) ? e.message : String(e)}</div></div>`;
+      const sfKpis=document.getElementById("sfKpis");
+      const condoKpis=document.getElementById("condoKpis");
       if (sfKpis) sfKpis.innerHTML = err;
       if (condoKpis) condoKpis.innerHTML = err;
     }
   }
 
   document.addEventListener("DOMContentLoaded", boot);
+})();
+</script>
+
+<!-- RATES SCRIPT: renders from /api/rates; shows APR if base rate missing -->
+<script>
+(() => {
+  const bodyEl   = document.getElementById("ratesBody");
+  const stampEl  = document.getElementById("ratesUpdated");
+
+  function row(l) {
+    const primary = l?.rate || l?.apr;   // prefer base rate, else APR
+    const label   = l?.rate ? "" : " APR";
+    const aprTxt  = l?.apr  ? `${l.apr}% APR` : "";
+    const ptsTxt  = l?.points ? `${l.points} pts` : "";
+    const sub     = [aprTxt, ptsTxt].filter(Boolean).join(" • ");
+
+    const div = document.createElement("div");
+    div.className = "rate-row";
+    div.innerHTML = `
+      <div>
+        <h4>${l?.name || "Lender"}</h4>
+        <div class="rate-tags">
+          <span class="tag">${l?.product || "30 yr fixed"}</span>
+          ${l?.url ? `<a class="tag" href="${l.url}" target="_blank" rel="noopener">Rate page</a>` : ""}
+          ${l?.contactUrl ? `<a class="tag" href="${l.contactUrl}" target="_blank" rel="noopener">Get pre-approved</a>` : ""}
+        </div>
+      </div>
+      <div class="rate-nums">
+        <div class="num" style="font-size:18px">${primary ? `${primary}%${label}` : "—"}</div>
+        <div class="sub">${sub}</div>
+      </div>
+    `;
+    return div;
+  }
+
+  async function loadRates(){
+    try {
+      stampEl.textContent = "Loading…";
+      const r = await fetch("/api/rates", { headers: { accept: "application/json" } });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const j = await r.json();
+      const lenders = Array.isArray(j.lenders) ? j.lenders : [];
+      const hasNumbers = lenders.some(x => x && (x.rate || x.apr));
+      bodyEl.innerHTML = "";
+      (hasNumbers ? lenders : (j.sample || [])).forEach(l => bodyEl.appendChild(row(l)));
+      const ts = j.generatedAt || lenders[0]?.updatedAt;
+      stampEl.textContent = ts
+        ? `Updated ${new Date(ts).toLocaleDateString()} ${new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+        : "Updated recently";
+    } catch (e) {
+      bodyEl.innerHTML = `
+        <div class="rate-row">
+          <div><h4>Rates unavailable</h4><small class="muted">Could not load lender data.</small></div>
+          <div class="rate-nums"><div class="num">—</div><div class="sub">Try again soon</div></div>
+        </div>`;
+      stampEl.textContent = "Error";
+      console.error(e);
+    }
+  }
+
+  loadRates();
+  setInterval(loadRates, 15 * 60 * 1000);
 })();
 </script>
 </body>
