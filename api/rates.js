@@ -1,4 +1,7 @@
-// pages/api/rates.js (v2)
+// api/rates.js
+// Serverless endpoint for Vercel that fetches lender rates server-side.
+// Caches for 10 minutes. Falls back to sample data if scrapes fail.
+
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=3600');
   try {
@@ -13,7 +16,7 @@ export default async function handler(req, res) {
     const lenders = results
       .filter(r => r.status === 'fulfilled' && r.value)
       .map(r => r.value)
-      .filter(x => x && (x.rate || x.apr))              // drop rows with zero numbers
+      .filter(x => x && (x.rate || x.apr)) // only keep rows with a number
       .sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
 
     res.status(200).json({
@@ -35,7 +38,7 @@ async function fetchText(url, opts = {}) {
   return res.text();
 }
 
-// Try multiple formats of “30-year” rows and pick the smaller as the base rate, larger as APR.
+// Parse a 30-year fixed row. We try multiple formats and pick the smaller as base rate and larger as APR.
 function parseThirtyYear(html) {
   const clean = html.replace(/\s+/g, ' ');
   const patterns = [
@@ -49,12 +52,16 @@ function parseThirtyYear(html) {
       const a = parseFloat(m[1]), b = parseFloat(m[2]);
       const rate = Math.min(a, b), apr = Math.max(a, b);
       return {
-        rate: rate.toFixed(3).replace(/0{1,2}$/, ''),
-        apr: apr.toFixed(3).replace(/0{1,2}$/, '')
+        rate: trimNum(rate),
+        apr: trimNum(apr)
       };
     }
   }
   return { rate: undefined, apr: undefined };
+}
+
+function trimNum(n) {
+  return n.toFixed(3).replace(/0{1,2}$/, '');
 }
 
 // Providers
@@ -80,21 +87,4 @@ async function northShore() {
   const url = 'https://www.northshorebank.com/personal/loans/mortgage/mortgage-rates.aspx';
   const html = await fetchText(url);
   const { rate, apr } = parseThirtyYear(html);
-  return { name: 'North Shore Bank', product: '30 yr fixed', rate, apr, url, contactUrl: 'https://www.northshorebank.com/', updatedAt: new Date().toISOString(), order: 4 };
-}
-async function associatedBank() {
-  const url = 'https://www.associatedbank.com/personal/mortgage/mortgage-rates';
-  const html = await fetchText(url);
-  const { rate, apr } = parseThirtyYear(html);
-  return { name: 'Associated Bank', product: '30 yr fixed', rate, apr, url, contactUrl: 'https://www.associatedbank.com/', updatedAt: new Date().toISOString(), order: 5 };
-}
-
-// Safe sample so the UI never goes blank
-function fallbackSample() {
-  const now = new Date().toISOString();
-  return [
-    { name: 'Landmark Credit Union', product: '30 yr fixed', rate: '6.875', apr: '6.942', url: 'https://landmarkcu.com/mortgage-rates', contactUrl: 'https://landmarkcu.com/mortgage', updatedAt: now, order: 1 },
-    { name: 'Summit Credit Union', product: '30 yr fixed', rate: '6.990', apr: '7.050', url: 'https://www.summitcreditunion.com/mortgages/mortgage-rates', contactUrl: 'https://www.summitcreditunion.com/', updatedAt: now, order: 2 },
-    { name: 'UW Credit Union', product: '30 yr fixed', rate: '7.125', apr: '7.190', url: 'https://www.uwcu.org/loans/mortgage/rates/', contactUrl: 'https://www.uwcu.org/', updatedAt: now, order: 3 }
-  ];
-}
+  return { name: 'North Shore Bank', product: '30 yr fixed', rate, apr, url, contactUrl: 'https://www.northshorebank.com/', updatedAt: new Date
