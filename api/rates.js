@@ -111,21 +111,20 @@ async function fetchSummitJSON({ debug = false } = {}) {
   // Optional env override
   const envRate = toNum(process.env.SUMMIT_RATE);
   const envApr  = toNum(process.env.SUMMIT_APR);
-  const override = inRange(envRate) || inRange(envApr);
+  const hasOverride = inRange(envRate) || inRange(envApr);
 
-  // Their JSON endpoint (thanks, Josh)
   const baseUrl = "https://ratescentral.summitcreditunion.com/api/website/3Uw4xUFQt1EVCMpYRJuXKx/index.json";
 
-  // Try with ts param then without; send a referer + accept headers
   let json = null, usedUrl = null, error = null;
-  for (const candidate of [`${baseUrl}?${Date.now()}`, baseUrl]) {
+  for (const candidate of [`${baseUrl}?ts=${Date.now()}`, baseUrl]) {
     try {
       json = await fetchJSON(candidate, {
         headers: {
           "accept": "application/json",
           "referer": "https://www.summitcreditunion.com/",
           "user-agent": "Mozilla/5.0 ratesbot"
-        }
+        },
+        cache: "no-store"
       });
       usedUrl = candidate;
       break;
@@ -134,47 +133,110 @@ async function fetchSummitJSON({ debug = false } = {}) {
     }
   }
 
-  // If JSON failed but overrides exist, return override
-  if (!json) {
-    if (override) {
-      const final = normalizeRateApr(envRate, envApr);
-      const payload = base("Summit Credit Union", final.rate, final.apr,
-        "https://www.summitcreditunion.com/borrow/mortgage-loan/#mortgage-rates", 3);
-      if (debug) payload.__debug = { lender: "Summit", note: "used env override", error: String(error) };
-      return payload;
-    }
-    // No data at all → skip Summit
-    if (debug) return { __debug: { lender: "Summit", note: "JSON fetch failed and no override", error: String(error) } };
+  if (!json && !hasOverride) {
+    // skip Summit cleanly
+    if (debug) return { __debug: { lender: "Summit", note: "JSON fetch failed; no override", error: String(error) } };
     return null;
   }
 
-  // Heuristic: walk the JSON for an object representing 30-year fixed mortgage with labeled rate/APR.
-  const pick = findThirtyFixed(json);
+  // Try to find a clean 30-year fixed object inside their JSON
+  const pick = json ? pickSummitThirtyFixed(json) : null;
 
-  const final = normalizeRateApr(toNum(pick?.rate), toNum(pick?.apr));
-  const payload = base("Summit Credit Union", final.rate, final.apr,
-    "https://www.summitcreditunion.com/borrow/mortgage-loan/#mortgage-rates", 3);
+  // Prefer live JSON; fall back to overrides if needed
+  let rateNum = toNum(pick?.rate);
+  let aprNum  = toNum(pick?.apr);
+
+  if ((!inRange(rateNum) && hasOverride) || (!inRange(aprNum) && hasOverride)) {
+    rateNum = inRange(rateNum) ? rateNum : envRate;
+    aprNum  = inRange(aprNum)  ? aprNum  : envApr;
+  }
+
+  // If still nothing usable and no override, drop Summit
+  if (!inRange(rateNum) && !inRange(aprNum)) {
+    if (debug) return { __debug: { lender: "Summit", usedUrl, note: "no 30yr fixed found", sample: stringifySample(json) } };
+    return null;
+  }
+
+  const final = normalizeRateApr(rateNum, aprNum);
+  const payload = {
+    name: "Summit Credit Union",
+    product: "30 yr fixed",
+    rate: final.rate,
+    apr: final.apr,
+    url: "https://www.summitcreditunion.com/borrow/mortgage-loan/#mortgage-rates",
+    contactUrl: "https://www.summitcreditunion.com/borrow/mortgage-loan/#mortgage-rates",
+    updatedAt: new Date().toISOString(),
+    order: 3
+  };
 
   if (debug) {
     payload.__debug = {
       lender: "Summit",
       usedUrl,
-      sample: stringifySample(json),
       selected: pick,
       final
     };
   }
-  // If we still failed to find numbers and no override, drop Summit to avoid junk
-  if (!payload.rate && !override) return debug ? payload : null;
-
-  // If numbers missing but override exists, merge it
-  if (!payload.rate && override) {
-    const merged = normalizeRateApr(envRate, envApr);
-    payload.rate = merged.rate; payload.apr = merged.apr;
-  }
-
   return payload;
 }
+
+/* ---- Summit-specific JSON picker ---- */
+function pickSummitThirtyFixed(json) {
+  let best = null;
+
+  walk(json, obj => {
+    if (!obj || typeof obj !== "object") return;
+
+    // Strings we can scan for label matches
+    const label = [
+      obj.title, obj.name, obj.label, obj.product, obj.header, obj.subtitle, obj.description
+    ].filter(Boolean).join(" ").toLowerCase();
+
+    // Numeric fields that scream "term"
+    const term = toNum(obj.term) || toNum(obj.termMonths) || toNum(obj.term_months);
+
+    // Rate-like fields
+    const r = firstDefined(
+      obj.rate, obj.interestRate, obj.interest_rate, obj.baseRate, obj.base_rate, obj.displayRate, obj.display_rate
+    );
+    const a = firstDefined(
+      obj.apr, obj.APR, obj.annualPercentageRate, obj.annual_percentage_rate
+    );
+
+    // Heuristics:
+    // 1) explicit “30 year fixed” in label
+    const looksThirtyFixed =
+      (/\b30\b/.test(label) && /fix/.test(label)) ||
+      (term === 30 || term === 360);
+
+    // Some schemas put a boolean
+    const fixedFlag = !!(obj.fixed || obj.isFixed || /fixed/.test(String(obj.type || obj.loanType || obj.category || "")));
+
+    if ((looksThirtyFixed || fixedFlag) && (r != null || a != null)) {
+      // Normalize numbers
+      const rn = toNum(r);
+      const an = toNum(a);
+
+      // Keep the first decent candidate
+      if (!best) {
+        const final = normalizeRateApr(rn, an);
+        best = { rate: final.rate, apr: final.apr, raw: prune(obj) };
+      }
+    }
+  });
+
+  // As a last resort, scan the whole JSON for two percents near each other
+  if (!best) {
+    const pair = twoPercentsNearby(JSON.stringify(json));
+    if (pair) best = { rate: pair.base, apr: pair.apr, raw: { fallback: true } };
+  }
+
+  return best;
+}
+
+function firstDefined(...vals){ for (const v of vals){ if (v != null && v !== "") return v; } return undefined; }
+function prune(o){ try{ const s = JSON.stringify(o); return s.length>800 ? JSON.parse(s.slice(0,800)) : o; } catch { return o; } }
+
 
 /* ================= Helpers ================= */
 
