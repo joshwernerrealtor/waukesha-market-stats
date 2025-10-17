@@ -1,33 +1,42 @@
 // pages/api/rates.js
-// Serverless endpoint for lender rates. Fetches server-side (no CORS mess), caches at the edge.
+// Serverless endpoint for lender rates. Parallel fetch with timeouts; prefers rate, falls back to APR.
 
 export default async function handler(req, res) {
-  res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=3600');
+  res.setHeader('Cache-Control', 's-maxage=900, stale-while-revalidate=3600'); // 15m cache, 1h stale
   try {
     const results = await Promise.allSettled([
-      landmarkCU(),
-      summitCU(),
-      uwcu(),
-      northShore(),
-      associatedBank(),
+      withTimeout(landmarkCU(), 6000),
+      withTimeout(summitCU(), 6000),
+      withTimeout(uwcu(), 6000),
+      withTimeout(northShore(), 6000),
+      withTimeout(associatedBank(), 6000),
     ]);
 
     const lenders = results
       .filter(r => r.status === 'fulfilled' && r.value)
       .map(r => r.value)
-      .filter(x => x && (x.rate || x.apr)) // only keep rows with at least one number
+      .filter(x => x && (x.rate || x.apr))
       .sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
 
     res.status(200).json({
       generatedAt: new Date().toISOString(),
-      lenders: lenders.length ? lenders : fallbackSample()
+      lenders: lenders.length >= 2 ? lenders : (lenders.length ? lenders.concat(fallbackSample().slice(0, 2 - lenders.length)) : fallbackSample())
     });
   } catch (e) {
-    res.status(200).json({
-      generatedAt: new Date().toISOString(),
-      lenders: fallbackSample(),
-      error: 'partial'
-    });
+    res.status(200).json({ generatedAt: new Date().toISOString(), lenders: fallbackSample(), error: 'partial' });
+  }
+}
+
+async function withTimeout(promise, ms) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  try {
+    const val = await promise;
+    clearTimeout(t);
+    return val;
+  } catch (e) {
+    clearTimeout(t);
+    throw e;
   }
 }
 
@@ -37,7 +46,7 @@ async function fetchText(url, opts = {}) {
   return res.text();
 }
 
-// Try multiple “30 year fixed” formats. Smaller number is base rate, larger is APR.
+// Prefer base rate if found; otherwise APR. Return whichever exists.
 function parseThirtyYear(html) {
   const clean = html.replace(/\s+/g, ' ');
   const patterns = [
@@ -53,12 +62,16 @@ function parseThirtyYear(html) {
       const rate = Math.min(a, b);
       const apr  = Math.max(a, b);
       return {
-        rate: rate.toFixed(3).replace(/0{1,2}$/, ''),
-        apr: apr.toFixed(3).replace(/0{1,2}$/, '')
+        rate: isFinite(rate) ? trim(rate) : undefined,
+        apr: isFinite(apr) ? trim(apr) : undefined,
       };
     }
   }
   return { rate: undefined, apr: undefined };
+}
+
+function trim(n) {
+  return n.toFixed(3).replace(/0{1,2}$/, '');
 }
 
 // Providers
@@ -93,7 +106,7 @@ async function associatedBank() {
   return { name: 'Associated Bank', product: '30 yr fixed', rate, apr, url, contactUrl: 'https://www.associatedbank.com/', updatedAt: new Date().toISOString(), order: 5 };
 }
 
-// Safe sample so the UI never goes blank
+// Fallback list so your UI never shows a wall of dashes
 function fallbackSample() {
   const now = new Date().toISOString();
   return [
