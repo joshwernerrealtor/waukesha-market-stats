@@ -1,16 +1,16 @@
 // pages/api/rates.js
-// Returns up to 2 lenders: Associated Bank + Landmark Credit Union.
-// Server-side fetch with strict timeouts, short in-memory cache, de-dup by name,
-// and tolerant parsing that prefers the base "Interest Rate" but falls back to APR.
+// Lenders: Associated Bank + Landmark CU + UW Credit Union.
+// Server-side fetch with strict timeouts, short in-memory cache, de-dup by name.
+// Parses a labeled 30-year fixed block; falls back to APR if base rate missing.
 
-const CACHE_TTL_MS = 10 * 60 * 1000;  // 10 minutes in-memory (per warm function)
+const CACHE_TTL_MS = 10 * 60 * 1000;  // 10 minutes warm cache
 const TIMEOUT_MS   = 7000;            // 7 seconds per provider
-const MAX_LENDERS  = 2;               // show Associated + Landmark (you can increase later)
+const MAX_LENDERS  = 3;               // show all three
 
 let CACHE = { ts: 0, data: null };
 
 export default async function handler(req, res) {
-  res.setHeader("Cache-Control", "s-maxage=900, stale-while-revalidate=3600"); // 15m edge cache
+  res.setHeader("Cache-Control", "s-maxage=900, stale-while-revalidate=3600"); // edge cache
 
   const now = Date.now();
   if (CACHE.data && now - CACHE.ts < CACHE_TTL_MS) {
@@ -21,9 +21,9 @@ export default async function handler(req, res) {
     const results = await Promise.allSettled([
       withTimeout(fetchAssociatedBank(), TIMEOUT_MS),
       withTimeout(fetchLandmarkCU(),    TIMEOUT_MS),
+      withTimeout(fetchUWCU(),          TIMEOUT_MS),
     ]);
 
-    // keep good ones with at least one numeric field
     const list = results
       .filter(r => r.status === "fulfilled" && r.value)
       .map(r => r.value)
@@ -53,26 +53,18 @@ export default async function handler(req, res) {
 
 /* ---------------- Providers ---------------- */
 
-// 1) Associated Bank — your provided page with labeled Interest Rate/APR
+// Associated Bank — labeled Interest Rate/APR near "30 Year Fixed"
 async function fetchAssociatedBank() {
   const url = "https://www.associatedbank.com/personal/loans/home-loans/mortgage-rates?redir=A24";
   const html = await fetchText(url);
-
-  // Narrow to the “30 Year Fixed” area so we don’t snag jumbo/ARM rows.
   const block = extractThirtyYearBlock(html);
-
-  // Prefer labeled "Interest Rate" and "APR"
   const interest = findPercent(block, /(Interest\s*Rate|Rate)\s*:?\s*(\d{1,2}\.\d{1,3})\s*%/i);
   const apr      = findPercent(block, /\bAPR\b\s*:?\s*(\d{1,2}\.\d{1,3})\s*%/i);
+  const duo      = (interest == null || apr == null) ? twoPercentsNearby(block) : null;
 
-  // If labels weren’t found, try "two percents near each other" fallback
-  const duo = (interest == null || apr == null) ? twoPercentsNearby(block) : null;
-
-  // Choose final numbers with sanity checks
   const baseRate = inRange(interest) ? interest : inRange(duo?.base) ? duo.base : undefined;
   const aprRate  = inRange(apr)      ? apr      : inRange(duo?.apr)  ? duo.apr  : undefined;
-
-  const final = normalizeRateApr(baseRate, aprRate);
+  const final    = normalizeRateApr(baseRate, aprRate);
 
   return {
     name: "Associated Bank",
@@ -86,23 +78,18 @@ async function fetchAssociatedBank() {
   };
 }
 
-// 2) Landmark Credit Union — public HTML page
+// Landmark Credit Union — tolerant parse around "30 year"
 async function fetchLandmarkCU() {
   const url = "https://landmarkcu.com/mortgage-rates";
   const html = await fetchText(url);
-
-  // Try to isolate the 30-year area first; then parse percents
   const block = extractThirtyYearBlock(html);
-
-  // Landmark sometimes presents “Rate … APR …” in the same vicinity
   const interest = findPercent(block, /(Interest\s*Rate|Rate)\s*:?\s*(\d{1,2}\.\d{1,3})\s*%/i);
   const apr      = findPercent(block, /\bAPR\b\s*:?\s*(\d{1,2}\.\d{1,3})\s*%/i);
   const duo      = (interest == null || apr == null) ? twoPercentsNearby(block) : null;
 
   const baseRate = inRange(interest) ? interest : inRange(duo?.base) ? duo.base : undefined;
   const aprRate  = inRange(apr)      ? apr      : inRange(duo?.apr)  ? duo.apr  : undefined;
-
-  const final = normalizeRateApr(baseRate, aprRate);
+  const final    = normalizeRateApr(baseRate, aprRate);
 
   return {
     name: "Landmark Credit Union",
@@ -116,11 +103,39 @@ async function fetchLandmarkCU() {
   };
 }
 
+// UW Credit Union — page prints "30-Year Fixed Rate Purchase" with "Rate" and "APR"
+async function fetchUWCU() {
+  const url = "https://www.uwcu.org/mortgage-home-loans/options/fixed-rate";
+  const html = await fetchText(url);
+
+  // Isolate the 30-Year Fixed Rate Purchase block specifically
+  const clean = html.replace(/\s+/g, " ");
+  const match = clean.match(/30[-\s]?Year\s+Fixed\s+Rate\s+Purchase[^]{0,1200}/i);
+  const block = match ? match[0] : extractThirtyYearBlock(clean);
+
+  // Labels are printed as "Rate" and "APR" with percents right below
+  const rate = findPercent(block, /Rate[^0-9]{0,20}(\d{1,2}\.\d{1,3})\s*%/i);
+  const apr  = findPercent(block, /\bAPR\b[^0-9]{0,20}(\d{1,2}\.\d{1,3})\s*%/i);
+
+  const final = normalizeRateApr(inRange(rate) ? rate : undefined, inRange(apr) ? apr : undefined);
+
+  return {
+    name: "UW Credit Union",
+    product: "30 yr fixed",
+    rate: final.rate,
+    apr: final.apr,
+    url,
+    contactUrl: "https://www.uwcu.org/",
+    updatedAt: new Date().toISOString(),
+    order: 3
+  };
+}
+
 /* ---------------- Parsing helpers ---------------- */
 
 function extractThirtyYearBlock(html) {
   const clean = html.replace(/\s+/g, " ");
-  const m = clean.match(/30\s*(?:year|yr)\s*(?:fixed)?[^]{0,1800}/i); // take a reasonable window
+  const m = clean.match(/30\s*(?:year|yr)\s*(?:fixed)?[^]{0,1800}/i);
   return m ? m[0] : clean.slice(0, 2000);
 }
 
@@ -144,26 +159,17 @@ function twoPercentsNearby(txt) {
 }
 
 function normalizeRateApr(rate, apr) {
-  // If only one number is present, use it as the main rate.
   if (rate != null && apr == null) return { rate, apr: undefined };
-  if (rate == null && apr != null) return { rate: apr, apr }; // show APR as the big number
-
+  if (rate == null && apr != null) return { rate: apr, apr }; // show APR as big number
   if (rate != null && apr != null) {
-    // APR should not be lower than base rate; if it is, swap them.
     if (parseFloat(apr) < parseFloat(rate)) return { rate: apr, apr: rate };
     return { rate, apr };
   }
   return { rate: undefined, apr: undefined };
 }
 
-function inRange(n) {
-  const x = parseFloat(n);
-  return Number.isFinite(x) && x >= 2 && x <= 20; // keep to plausible mortgage range
-}
-
-function trim(n) {
-  return n.toFixed(3).replace(/0{1,2}$/, "");
-}
+function inRange(n) { const x = parseFloat(n); return Number.isFinite(x) && x >= 2 && x <= 20; }
+function trim(n) { return n.toFixed(3).replace(/0{1,2}$/, ""); }
 
 /* ---------------- Infra helpers ---------------- */
 
@@ -180,7 +186,7 @@ async function withTimeout(promise, ms) {
   ]);
 }
 
-// Deduplicate by lender name; prefer entries that have a base rate
+// De-dup by lender name; prefer the one that actually has a base rate
 function dedupeByName(items) {
   const m = new Map();
   for (const it of items) {
@@ -196,7 +202,7 @@ function dedupeByName(items) {
   return [...m.values()];
 }
 
-/* ---------------- Fallback (shown only if parsing/timing fails) ---------------- */
+/* ---------------- Fallback ---------------- */
 
 function fallbackSample() {
   const now = new Date().toISOString();
@@ -220,6 +226,16 @@ function fallbackSample() {
       contactUrl: "https://landmarkcu.com/mortgage",
       updatedAt: now,
       order: 2
+    },
+    {
+      name: "UW Credit Union",
+      product: "30 yr fixed",
+      rate: "6.000",
+      apr:  "6.047",
+      url: "https://www.uwcu.org/mortgage-home-loans/options/fixed-rate",
+      contactUrl: "https://www.uwcu.org/",
+      updatedAt: now,
+      order: 3
     }
   ];
 }
