@@ -180,63 +180,85 @@ async function fetchSummitJSON({ debug = false } = {}) {
   return payload;
 }
 
-/* ---- Summit-specific JSON picker ---- */
+/* ---- Summit-specific JSON picker (RatesCentral schema) ----
+   Structure (simplified):
+   [
+     {
+       "title": "Mortgage Rates",
+       "fields": [
+         { "title": "Type and Term", "values": [ { rateId: "...", value: "30 Year Fixed" }, ... ] },
+         { "title": "Rate",          "values": [ { rateId: "...", value: "6.000%" }, ... ] },
+         { "title": "APR",           "values": [ { rateId: "...", value: "6.047%" }, ... ] }
+       ]
+     },
+     ...
+   ]
+   We find the "30 Year Fixed" entry in Type and Term, grab its rateId, then pull matching Rate/APR by the same rateId.
+*/
 function pickSummitThirtyFixed(json) {
-  let best = null;
+  // Helper to coerce arrays
+  const asArray = (v) => Array.isArray(v) ? v : (v == null ? [] : [v]);
 
-  walk(json, obj => {
-    if (!obj || typeof obj !== "object") return;
-
-    // Strings we can scan for label matches
-    const label = [
-      obj.title, obj.name, obj.label, obj.product, obj.header, obj.subtitle, obj.description
-    ].filter(Boolean).join(" ").toLowerCase();
-
-    // Numeric fields that scream "term"
-    const term = toNum(obj.term) || toNum(obj.termMonths) || toNum(obj.term_months);
-
-    // Rate-like fields
-    const r = firstDefined(
-      obj.rate, obj.interestRate, obj.interest_rate, obj.baseRate, obj.base_rate, obj.displayRate, obj.display_rate
-    );
-    const a = firstDefined(
-      obj.apr, obj.APR, obj.annualPercentageRate, obj.annual_percentage_rate
-    );
-
-    // Heuristics:
-    // 1) explicit “30 year fixed” in label
-    const looksThirtyFixed =
-      (/\b30\b/.test(label) && /fix/.test(label)) ||
-      (term === 30 || term === 360);
-
-    // Some schemas put a boolean
-    const fixedFlag = !!(obj.fixed || obj.isFixed || /fixed/.test(String(obj.type || obj.loanType || obj.category || "")));
-
-    if ((looksThirtyFixed || fixedFlag) && (r != null || a != null)) {
-      // Normalize numbers
-      const rn = toNum(r);
-      const an = toNum(a);
-
-      // Keep the first decent candidate
-      if (!best) {
-        const final = normalizeRateApr(rn, an);
-        best = { rate: final.rate, apr: final.apr, raw: prune(obj) };
-      }
+  // Walk any arrays/objects to find a block that has fields[]
+  let candidateBlocks = [];
+  walk(json, node => {
+    if (node && typeof node === "object" && Array.isArray(node.fields) && node.fields.length) {
+      candidateBlocks.push(node);
     }
   });
 
-  // As a last resort, scan the whole JSON for two percents near each other
-  if (!best) {
-    const pair = twoPercentsNearby(JSON.stringify(json));
-    if (pair) best = { rate: pair.base, apr: pair.apr, raw: { fallback: true } };
+  for (const block of candidateBlocks) {
+    const fields = asArray(block.fields);
+
+    // Find the "Type and Term" field (or anything that obviously lists products/terms)
+    const termField = fields.find(f => {
+      const t = String(f.title || "").toLowerCase();
+      return /type.*term|term|product|loan/i.test(t);
+    });
+
+    if (!termField || !Array.isArray(termField.values)) continue;
+
+    // Find the entry for "30 Year Fixed" (be forgiving)
+    const termEntry = termField.values.find(v => {
+      const label = String(v?.value || "").toLowerCase();
+      return /\b30\b/.test(label) && /fix/.test(label);
+    });
+
+    if (!termEntry || !termEntry.rateId) continue;
+    const rid = termEntry.rateId;
+
+    // Find a "Rate" field and an "APR" field
+    const rateField = fields.find(f => /(^|\b)rate(s)?\b/i.test(String(f.title || "")));
+    const aprField  = fields.find(f => /\bapr\b|annual\s*percentage/i.test(String(f.title || "")));
+
+    // Pull matching values by rateId
+    let rateVal = undefined, aprVal = undefined;
+
+    if (rateField && Array.isArray(rateField.values)) {
+      const r = rateField.values.find(v => v?.rateId === rid);
+      rateVal = r?.value; // e.g. "6.000%"
+    }
+    if (aprField && Array.isArray(aprField.values)) {
+      const a = aprField.values.find(v => v?.rateId === rid);
+      aprVal = a?.value; // e.g. "6.047%"
+    }
+
+    // Normalize numbers like "6.000%" -> 6.000
+    const rNum = toNum(rateVal);
+    const aNum = toNum(aprVal);
+
+    if (inRange(rNum) || inRange(aNum)) {
+      const final = normalizeRateApr(rNum, aNum);
+      return { rate: final.rate, apr: final.apr, raw: { rid, rateVal, aprVal } };
+    }
   }
 
-  return best;
+  // If we got here, try last-ditch: two percents near each other anywhere in this block
+  const pair = twoPercentsNearby(JSON.stringify(json));
+  if (pair) return { rate: pair.base, apr: pair.apr, raw: { fallback: true } };
+
+  return null;
 }
-
-function firstDefined(...vals){ for (const v of vals){ if (v != null && v !== "") return v; } return undefined; }
-function prune(o){ try{ const s = JSON.stringify(o); return s.length>800 ? JSON.parse(s.slice(0,800)) : o; } catch { return o; } }
-
 
 /* ================= Helpers ================= */
 
