@@ -231,56 +231,84 @@
   </header>
 
   <main class="container">
-    <!-- RATES: full drop-in (section + script) -->
+   <!-- RATES: compact rows (section + tiny scoped styles + script) -->
 <section id="rates" aria-labelledby="rates-title">
+  <style>
+    /* Scoped to #rates so we don't fight the rest of your CSS */
+    #rates .heading{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+    #rates .heading h2{margin:0;font-size:22px}
+    #rates .controls{color:var(--muted);font-size:14px}
+    #rates .rates-list{display:grid;gap:8px;margin-top:10px}
+    #rates .rate-row{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      border:1px solid #2f3242;border-radius:10px;padding:10px 12px;background:var(--card, #141418)
+    }
+    #rates .left{min-width:0}
+    #rates h4{margin:0;font-size:14px;font-weight:700}
+    #rates small{color:var(--muted)}
+    #rates .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+    #rates .tag{font:12px/1 system-ui;border:1px solid #2f3242;border-radius:999px;padding:2px 8px;color:var(--muted)}
+    #rates .nums{text-align:right;min-width:160px}
+    #rates .num{font-weight:800;font-size:18px}
+    #rates .sub{font-size:12px;color:var(--muted)}
+    #rates .skel{height:38px;border-radius:10px;
+      background:linear-gradient(90deg,#1b1d26 25%,#202231 37%,#1b1d26 63%);background-size:400% 100%;animation:shimmer 1.2s ease-in-out infinite}
+    @keyframes shimmer{0%{background-position:100% 0}100%{background-position:0 0}}
+    #rates .updated{margin-top:6px;font-size:12px;color:var(--muted)}
+    #rates .disclaimer{margin-top:6px;font-size:12px;line-height:1.35;color:var(--muted)}
+  </style>
+
   <div class="heading">
     <h2 id="rates-title">Local lender rates</h2>
     <div class="controls"><span id="rates-count">0 lenders</span></div>
   </div>
 
-  <div id="rates-grid" class="grid" aria-live="polite" aria-busy="true">
-    <div class="card skeleton"></div>
-    <div class="card skeleton"></div>
-    <div class="card skeleton"></div>
+  <div id="rates-list" class="rates-list" aria-live="polite" aria-busy="true">
+    <div class="skel"></div>
+    <div class="skel"></div>
+    <div class="skel"></div>
   </div>
 
   <div class="updated" id="rates-updated" hidden></div>
 
-  <!-- Disclaimer -->
-  <p class="muted" id="rates-disclaimer" style="margin-top:8px;font-size:12px;line-height:1.4">
+  <!-- Disclaimer (muted, compact) -->
+  <p class="disclaimer" id="rates-disclaimer">
     Realty ONE Group Luminous does not endorse or recommend any lender listed here. These rates are provided for informational purposes only. Please do your own research and choose your preferred lender.
   </p>
 </section>
 
 <script>
   (function () {
-    const grid = document.getElementById('rates-grid');
+    const list = document.getElementById('rates-list');
     const countEl = document.getElementById('rates-count');
     const updatedEl = document.getElementById('rates-updated');
 
-    function cardHTML(item){
-      const rate = item.rate != null ? `${item.rate}%` : '—';
-      const apr  = item.apr  != null ? `${item.apr}% APR` : '';
-      const points = item.points ? `${item.points} pts` : '';
+    function rowHTML(item){
+      const name = item.name || 'Lender';
       const product = item.product || '30 yr fixed';
+      const rate = (item.rate != null) ? `${item.rate}%` : '—';
+      const apr  = (item.apr  != null) ? `${item.apr}% APR` : '';
+      const points = item.points ? `${item.points} pts` : '';
       const meta = [apr, points].filter(Boolean).join(' • ');
-      const link = item.url ? `<a class="btn" href="${item.url}" target="_blank" rel="noopener">Rate page</a>` : '';
-      const cta  = item.contactUrl ? `<a class="btn primary" href="${item.contactUrl}" target="_blank" rel="noopener">Get pre-approved</a>` : '';
+
+      const links = [
+        item.url ? `<a class="tag" href="${item.url}" target="_blank" rel="noopener">Rate page</a>` : '',
+        item.contactUrl ? `<a class="tag" href="${item.contactUrl}" target="_blank" rel="noopener">Apply</a>` : ''
+      ].filter(Boolean).join('');
+
       return `
-        <div class="card">
-          <header>
-            <h3>${item.name || 'Lender'}</h3>
-            <span class="pill">${product}</span>
-          </header>
-          <div class="row">
-            <div class="rate">${rate}</div>
-            <div class="muted">${meta}</div>
+        <div class="rate-row">
+          <div class="left">
+            <h4>${name}</h4>
+            <div class="tags">
+              <span class="tag">${product}</span>
+              ${links}
+            </div>
           </div>
-          <div class="actions">
-            ${link}
-            ${cta}
+          <div class="nums">
+            <div class="num">${rate}</div>
+            <div class="sub">${meta}</div>
           </div>
-          <div class="updated">Updated ${item.updatedAt ? new Date(item.updatedAt).toLocaleString() : 'recently'}</div>
         </div>`;
     }
 
@@ -291,23 +319,22 @@
         const payload = await res.json();
         const items = Array.isArray(payload?.lenders) ? payload.lenders : [];
 
-        grid.setAttribute('aria-busy', 'false');
-        grid.innerHTML = items.length ? items.map(cardHTML).join('') :
-          `<div class="card"><header><h3>Rates unavailable</h3></header><p class="muted">Could not load lender data. Try again in a minute.</p></div>`;
+        list.setAttribute('aria-busy', 'false');
+        list.innerHTML = items.length ? items.map(rowHTML).join('') :
+          `<div class="rate-row"><div class="left"><h4>Rates unavailable</h4><small>Please try again shortly.</small></div><div class="nums"><div class="num">—</div></div></div>`;
 
         countEl.textContent = `${items.length} ${items.length === 1 ? 'lender' : 'lenders'}`;
         updatedEl.hidden = !payload.generatedAt;
         if (!updatedEl.hidden) updatedEl.textContent = `Refreshed ${new Date(payload.generatedAt).toLocaleString()}`;
       } catch (err) {
-        grid.setAttribute('aria-busy', 'false');
-        grid.innerHTML = `<div class="card"><header><h3>Rates unavailable</h3></header><p class="muted">Could not load lender data. Try again in a minute.</p></div>`;
+        list.setAttribute('aria-busy', 'false');
+        list.innerHTML = `<div class="rate-row"><div class="left"><h4>Rates unavailable</h4><small>Please try again shortly.</small></div><div class="nums"><div class="num">—</div></div></div>`;
         countEl.textContent = '0 lenders';
         updatedEl.hidden = true;
         console.error(err);
       }
     }
 
-    // Initial load + gentle refresh
     getRates();
     setInterval(getRates, 15 * 60 * 1000);
   })();
