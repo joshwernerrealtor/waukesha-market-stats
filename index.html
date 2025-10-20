@@ -231,8 +231,8 @@
   </header>
 
   <main class="container">
-    <!-- RATES BLOCK -->
-    <section id="rates" aria-labelledby="rates-title">
+    <!-- RATES: full drop-in (section + script) -->
+<section id="rates" aria-labelledby="rates-title">
   <div class="heading">
     <h2 id="rates-title">Local lender rates</h2>
     <div class="controls"><span id="rates-count">0 lenders</span></div>
@@ -251,6 +251,67 @@
     Realty ONE Group Luminous does not endorse or recommend any lender listed here. These rates are provided for informational purposes only. Please do your own research and choose your preferred lender.
   </p>
 </section>
+
+<script>
+  (function () {
+    const grid = document.getElementById('rates-grid');
+    const countEl = document.getElementById('rates-count');
+    const updatedEl = document.getElementById('rates-updated');
+
+    function cardHTML(item){
+      const rate = item.rate != null ? `${item.rate}%` : '—';
+      const apr  = item.apr  != null ? `${item.apr}% APR` : '';
+      const points = item.points ? `${item.points} pts` : '';
+      const product = item.product || '30 yr fixed';
+      const meta = [apr, points].filter(Boolean).join(' • ');
+      const link = item.url ? `<a class="btn" href="${item.url}" target="_blank" rel="noopener">Rate page</a>` : '';
+      const cta  = item.contactUrl ? `<a class="btn primary" href="${item.contactUrl}" target="_blank" rel="noopener">Get pre-approved</a>` : '';
+      return `
+        <div class="card">
+          <header>
+            <h3>${item.name || 'Lender'}</h3>
+            <span class="pill">${product}</span>
+          </header>
+          <div class="row">
+            <div class="rate">${rate}</div>
+            <div class="muted">${meta}</div>
+          </div>
+          <div class="actions">
+            ${link}
+            ${cta}
+          </div>
+          <div class="updated">Updated ${item.updatedAt ? new Date(item.updatedAt).toLocaleString() : 'recently'}</div>
+        </div>`;
+    }
+
+    async function getRates() {
+      try {
+        const res = await fetch('/api/rates?bust=' + Date.now(), { headers: { 'accept': 'application/json' }, cache: 'no-store' });
+        if (!res.ok) throw new Error('Failed to load rates');
+        const payload = await res.json();
+        const items = Array.isArray(payload?.lenders) ? payload.lenders : [];
+
+        grid.setAttribute('aria-busy', 'false');
+        grid.innerHTML = items.length ? items.map(cardHTML).join('') :
+          `<div class="card"><header><h3>Rates unavailable</h3></header><p class="muted">Could not load lender data. Try again in a minute.</p></div>`;
+
+        countEl.textContent = `${items.length} ${items.length === 1 ? 'lender' : 'lenders'}`;
+        updatedEl.hidden = !payload.generatedAt;
+        if (!updatedEl.hidden) updatedEl.textContent = `Refreshed ${new Date(payload.generatedAt).toLocaleString()}`;
+      } catch (err) {
+        grid.setAttribute('aria-busy', 'false');
+        grid.innerHTML = `<div class="card"><header><h3>Rates unavailable</h3></header><p class="muted">Could not load lender data. Try again in a minute.</p></div>`;
+        countEl.textContent = '0 lenders';
+        updatedEl.hidden = true;
+        console.error(err);
+      }
+    }
+
+    // Initial load + gentle refresh
+    getRates();
+    setInterval(getRates, 15 * 60 * 1000);
+  })();
+</script>
 
     <!-- Two-up cards -->
     <section class="grid-2">
