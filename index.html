@@ -232,22 +232,25 @@
 
   <main class="container">
     <!-- RATES BLOCK -->
-    <section id="rates" class="card" aria-labelledby="ratesTitle">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-        <h2 id="ratesTitle" style="margin:0;font-size:20px">Today’s Local Mortgage Rates</h2>
-        <span class="badge"><span id="ratesUpdated">Loading…</span></span>
-      </div>
+    <section id="rates" aria-labelledby="rates-title">
+  <div class="heading">
+    <h2 id="rates-title">Local lender rates</h2>
+    <div class="controls"><span id="rates-count">0 lenders</span></div>
+  </div>
 
-      <div id="ratesBody" class="rates-list" style="margin-top:10px">
-        <div class="skel" style="height:38px"></div>
-        <div class="skel" style="height:38px"></div>
-        <div class="skel" style="height:38px"></div>
-      </div>
+  <div id="rates-grid" class="grid" aria-live="polite" aria-busy="true">
+    <div class="card skeleton"></div>
+    <div class="card skeleton"></div>
+    <div class="card skeleton"></div>
+  </div>
 
-      <p class="muted" style="margin-top:10px;font-size:12px">
-        Indicative rates published on lender sites; subject to change. Not a commitment to lend.
-      </p>
-    </section>
+  <div class="updated" id="rates-updated" hidden></div>
+
+  <!-- Disclaimer -->
+  <p class="muted" id="rates-disclaimer" style="margin-top:8px;font-size:12px;line-height:1.4">
+    Realty ONE Group Luminous does not endorse or recommend any lender listed here. These rates are provided for informational purposes only. Please do your own research and choose your preferred lender.
+  </p>
+</section>
 
     <!-- Two-up cards -->
     <section class="grid-2">
