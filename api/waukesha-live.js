@@ -135,45 +135,82 @@ Typical lines seen in the PDFs:
   Active Listings 402
 We tolerate light wording drift.
 */
+/* ====== Replace parseRprStats with this smarter, line-window parser ====== */
+
 function parseRprStats(txt){
   if (!txt) return emptyStats();
 
-  const nInt  = s => {
-    const m = String(s||"").match(/-?\d{1,3}(?:,\d{3})*|\d+/);
-    if (!m) return null;
-    const v = parseInt(m[0].replace(/,/g,""),10);
-    return Number.isFinite(v) ? v : null;
-  };
-  const nFloat = s => {
-    const m = String(s||"").match(/-?\d+(?:\.\d+)?/);
-    if (!m) return null;
-    const v = parseFloat(m[0]);
-    return Number.isFinite(v) ? v : null;
-  };
-  const findLine = (re) => {
-    const m = txt.match(re);
-    return m ? m[0] : "";
+  const lines = txt.split(/\n/).map(s => s.trim()).filter(Boolean);
+
+  // Helper: find first number in a string
+  const firstInt   = s => { const m = String(s||"").match(/-?\d{1,3}(?:,\d{3})*|\d+/); return m ? parseInt(m[0].replace(/,/g,""),10) : null; };
+  const firstFloat = s => { const m = String(s||"").match(/-?\d+(?:\.\d+)?/);         return m ? parseFloat(m[0]) : null; };
+
+  // Scan a small window of lines after a label to grab the number,
+  // because RPR often prints the value on the next line or two.
+  function pickNumberAround(idx, asFloat = false, lookAhead = 3){
+    for (let i = idx; i <= Math.min(idx + lookAhead, lines.length - 1); i++){
+      const n = asFloat ? firstFloat(lines[i]) : firstInt(lines[i]);
+      if (Number.isFinite(n)) return n;
+    }
+    return null;
+  }
+
+  // Build a quick index of label matches: label regex → extractor
+  // Add tolerant synonyms RPR likes to use.
+  const labelers = [
+    {
+      re: /(median\s+(sold\s+)?price)/i,
+      get: (i) => firstInt(lines[i]) ?? pickNumberAround(i+1, false, 2)
+    },
+    {
+      re: /(closed\s+sales|sold\s+listings|closed\s+listings)/i,
+      get: (i) => firstInt(lines[i]) ?? pickNumberAround(i+1, false, 3)
+    },
+    {
+      re: /(median\s+days\s+(in\s+rpr|on\s+market)|days\s+on\s+market)/i,
+      get: (i) => firstInt(lines[i]) ?? pickNumberAround(i+1, false, 2)
+    },
+    {
+      re: /(months\s+of\s+inventory|months\s+(of\s+)?supply)/i,
+      get: (i) => {
+        const v = firstFloat(lines[i]) ?? pickNumberAround(i+1, true, 2);
+        return Number.isFinite(v) ? Math.round(v * 10) / 10 : null;
+      }
+    },
+    {
+      re: /(active\s+listings|active\s+inventory|inventory\s+of\s+homes\s+for\s+sale|active\s+residential\s+listings|active\s+listings.*month\s+end)/i,
+      get: (i) => firstInt(lines[i]) ?? pickNumberAround(i+1, false, 3)
+    }
+  ];
+
+  let out = {
+    medianPrice: null,
+    closed: null,
+    dom: null,
+    monthsSupply: null,
+    activeListings: null
   };
 
-  const priceLine  = findLine(/Median (Sold )?Price[^\n]*\n?[^\n]*/i);
-  const closedLine = findLine(/Closed Sales[^\n]*\n?[^\n]*/i);
-  const domLine    = findLine(/(Median (Days in RPR|Days on Market)|Days on Market)[^\n]*\n?[^\n]*/i);
-  const moisLine   = findLine(/(Months of Inventory|Months (of )?Supply)[^\n]*\n?[^\n]*/i);
-  const activeLine = findLine(/Active Listings[^\n]*\n?[^\n]*/i);
+  for (let i = 0; i < lines.length; i++){
+    const line = lines[i];
+    for (const lbl of labelers){
+      if (lbl.re.test(line)){
+        const val = lbl.get(i);
+        if (/median\s+(sold\s+)?price/i.test(line))        out.medianPrice    = isNum(val) ? val : out.medianPrice;
+        else if (/(closed\s+sales|sold\s+listings|closed\s+listings)/i.test(line))
+                                                          out.closed         = isNum(val) ? val : out.closed;
+        else if (/(median\s+days\s+(in\s+rpr|on\s+market)|days\s+on\s+market)/i.test(line))
+                                                          out.dom            = isNum(val) ? val : out.dom;
+        else if (/(months\s+of\s+inventory|months\s+(of\s+)?supply)/i.test(line))
+                                                          out.monthsSupply   = isNum(val) ? val : out.monthsSupply;
+        else if (/(active\s+listings|active\s+inventory|inventory\s+of\s+homes\s+for\s+sale|active\s+residential\s+listings|active\s+listings.*month\s+end)/i.test(line))
+                                                          out.activeListings = isNum(val) ? val : out.activeListings;
+      }
+    }
+  }
 
-  const medianPrice    = nInt(priceLine.replace(/[^\d,]/g, " "));
-  const closed         = nInt(closedLine);
-  const dom            = nInt(domLine);
-  const monthsSupply   = nFloat(moisLine);
-  const activeListings = nInt(activeLine);
-
-  return {
-    medianPrice:    isNum(medianPrice)    ? medianPrice    : null,
-    closed:         isNum(closed)         ? closed         : null,
-    dom:            isNum(dom)            ? dom            : null,
-    monthsSupply:   isNum(monthsSupply)   ? round1(monthsSupply) : null,
-    activeListings: isNum(activeListings) ? activeListings : null
-  };
+  return out;
 }
-function isNum(n){ return typeof n === "number" && !Number.isNaN(n); }
-function round1(n){ return Math.round(n*10)/10; }
+
+function isNum(n){ return typeof n === "number" && Number.isFinite(n); }
