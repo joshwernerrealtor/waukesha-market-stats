@@ -1,16 +1,14 @@
 // pages/api/waukesha-live.js
-// Auto-extracts Waukesha County stats from RPR PDFs (SF + Condo) with debug mode.
+// Auto-extracts Waukesha County stats from the two official RPR PDFs (SF + Condo).
 // Pulls: Median Price, Closed Sales, Days on Market, Months of Inventory/Supply, Active Listings.
-// Sets updatedAt from Last-Modified. Cache: 5 min. Requires "pdf-parse" in package.json.
+// Sets updatedAt from the PDFs' Last-Modified header. Caches 5 min at the edge.
+// Requires "pdf-parse" in package.json. Do NOT run this route on the Edge runtime.
 
 import pdfParse from "pdf-parse";
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=3600");
 
-  const debug = String(req.query.debug || "") === "1";
-
-  // Update these only if RPR rotates the IDs
   const SF_URL    = "https://www.narrpr.com/reports-v2/c296fac6-035d-4e9a-84fd-28455ab0339f/pdf";
   const CONDO_URL = "https://www.narrpr.com/reports-v2/5a675486-5c7b-4bb0-9946-0cffa3070f05/pdf";
 
@@ -33,48 +31,25 @@ export default async function handler(req, res) {
     const monthLabel = detectMonth(sfText) || detectMonth(condoText) || fallbackMonth();
     const key = monthKeyFromLabel(monthLabel); // "YYYY-MM"
 
-    const sfParse   = parseRprStats(sfText, { collectMatches: debug });
-    const condoParse= parseRprStats(condoText, { collectMatches: debug });
+    const sfStats    = parseRprStats(sfText);
+    const condoStats = parseRprStats(condoText);
 
     const months = {
       [key]: {
-        sf: pruneTo5(sfParse.values),
-        condo: pruneTo5(condoParse.values),
+        sf: sfStats,
+        condo: condoStats,
         sfReport: SF_URL,
         condoReport: CONDO_URL
       }
     };
 
-    // 3) If no header date, fall back to first day of label month
     if (!updatedAt) {
       const [yy, mm] = key.split("-").map(Number);
       updatedAt = ymd(new Date(yy, mm - 1, 1));
     }
 
-    const payload = { updatedAt, months };
-
-    if (debug) {
-      payload.__debug = {
-        monthLabel,
-        key,
-        sf: {
-          matches: sfParse.matches.slice(0, 30), // keep it readable
-          sample: sfText.split("\n").slice(0, 60) // top of doc
-        },
-        condo: {
-          matches: condoParse.matches.slice(0, 30),
-          sample: condoText.split("\n").slice(0, 60)
-        },
-        headers: {
-          sfLastModified: sfHead.lastModified?.toISOString() || null,
-          condoLastModified: condoHead.lastModified?.toISOString() || null
-        }
-      };
-    }
-
-    res.status(200).json(payload);
+    res.status(200).json({ updatedAt, months });
   } catch (err) {
-    // Return a safe shape so the UI keeps working
     const today = new Date();
     const key = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}`;
     const months = {
@@ -93,16 +68,6 @@ export default async function handler(req, res) {
 
 function emptyStats(){
   return { medianPrice: null, closed: null, dom: null, monthsSupply: null, activeListings: null };
-}
-function pruneTo5(v){
-  // ensures only the 5 fields your UI expects
-  return {
-    medianPrice: v.medianPrice ?? null,
-    closed: v.closed ?? null,
-    dom: v.dom ?? null,
-    monthsSupply: v.monthsSupply ?? null,
-    activeListings: v.activeListings ?? null
-  };
 }
 
 async function headOrByte(url){
@@ -156,17 +121,16 @@ function ymd(d){
 }
 function titleCase(s){ return s.replace(/\w\S*/g, t => t[0].toUpperCase()+t.slice(1).toLowerCase()); }
 
-/* ====== Parser with line-window + synonyms + optional debug matches ====== */
-function parseRprStats(txt, opts = {}){
-  if (!txt) return { values: emptyStats(), matches: [] };
+/* ====== Parser with guardrails: first-good wins + sanity filters ====== */
+function parseRprStats(txt){
+  if (!txt) return emptyStats();
 
-  const collect = opts.collectMatches === true;
   const lines = txt.split(/\n/).map(s => s.trim()).filter(Boolean);
-  const matches = [];
 
   const firstInt   = s => { const m = String(s||"").match(/-?\d{1,3}(?:,\d{3})*|\d+/); return m ? parseInt(m[0].replace(/,/g,""),10) : null; };
   const firstFloat = s => { const m = String(s||"").match(/-?\d+(?:\.\d+)?/);         return m ? parseFloat(m[0]) : null; };
 
+  // pull next number within a small window after a label
   function pickNumberAround(idx, asFloat = false, lookAhead = 3){
     for (let i = idx; i <= Math.min(idx + lookAhead, lines.length - 1); i++){
       const n = asFloat ? firstFloat(lines[i]) : firstInt(lines[i]);
@@ -175,45 +139,94 @@ function parseRprStats(txt, opts = {}){
     return null;
   }
 
+  // sanity checks per metric
+  const sane = {
+    price(n, line) {
+      if (!Number.isFinite(n)) return null;
+      if (/\$|price/i.test(line)) {
+        // If it's a price context, allow large numbers but enforce a floor
+        if (n >= 20000 && n <= 2000000) return n;
+        return null;
+      }
+      // If not a price context, still accept if it looks like a real price
+      if (n >= 20000 && n <= 2000000) return n;
+      return null;
+    },
+    closed(n) {
+      return Number.isFinite(n) && n >= 0 && n < 5000 ? n : null;
+    },
+    dom(n) {
+      return Number.isFinite(n) && n >= 0 && n <= 365 ? n : null;
+    },
+    mois(n) {
+      // ignore obvious year tokens and nonsense
+      if (!Number.isFinite(n)) return null;
+      if (n >= 0 && n < 50) return Math.round(n*10)/10;
+      return null;
+    },
+    active(n, line) {
+      // reject dollar amounts or lines mentioning Price
+      if (!Number.isFinite(n)) return null;
+      if (/\$|price/i.test(line)) return null;
+      return (n >= 0 && n < 50000) ? n : null;
+    }
+  };
+
+  // "first good wins" so later junk doesn't overwrite correct values
   const out = { medianPrice: null, closed: null, dom: null, monthsSupply: null, activeListings: null };
 
   for (let i = 0; i < lines.length; i++){
     const line = lines[i];
 
-    if (/(^|\s)median\s+(sold\s+)?price(\s|$)/i.test(line)) {
-      const raw = firstInt(line) ?? pickNumberAround(i+1, false, 2);
-      if (collect) matches.push({ metric: "medianPrice", line, raw });
-      if (isNum(raw)) out.medianPrice = raw;
+    // Median price
+    if (out.medianPrice == null && /(median\s+(sold\s+)?price)/i.test(line)) {
+      const candidate = firstInt(line) ?? pickNumberAround(i+1, false, 2);
+      const val = sane.price(candidate, line);
+      if (val != null) out.medianPrice = val;
       continue;
     }
-    if (/(^|\s)(closed\s+sales|sold\s+listings|closed\s+listings)(\s|$)/i.test(line)) {
-      const raw = firstInt(line) ?? pickNumberAround(i+1, false, 3);
-      if (collect) matches.push({ metric: "closed", line, raw });
-      if (isNum(raw)) out.closed = raw;
+
+    // Closed sales / sold listings
+    if (out.closed == null && /(closed\s+sales|sold\s+listings|closed\s+listings)/i.test(line)) {
+      const candidate = firstInt(line) ?? pickNumberAround(i+1, false, 3);
+      const val = sane.closed(candidate);
+      if (val != null) out.closed = val;
       continue;
     }
-    if (/(^|\s)(median\s+days\s+(in\s+rpr|on\s+market)|days\s+on\s+market)(\s|$)/i.test(line)) {
-      const raw = firstInt(line) ?? pickNumberAround(i+1, false, 2);
-      if (collect) matches.push({ metric: "dom", line, raw });
-      if (isNum(raw)) out.dom = raw;
+
+    // DOM
+    if (out.dom == null && /(median\s+days\s+(in\s+rpr|on\s+market)|days\s+on\s+market)/i.test(line)) {
+      const candidate = firstInt(line) ?? pickNumberAround(i+1, false, 2);
+      const val = sane.dom(candidate);
+      if (val != null) out.dom = val;
       continue;
     }
-    if (/(^|\s)(months\s+of\s+inventory|months\s+(of\s+)?supply)(\s|$)/i.test(line)) {
-      const raw = firstFloat(line) ?? pickNumberAround(i+1, true, 2);
-      if (collect) matches.push({ metric: "monthsSupply", line, raw });
-      if (isNum(raw)) out.monthsSupply = round1(raw);
+
+    // Months supply / inventory
+    if (out.monthsSupply == null && /(months\s+of\s+inventory|months\s+(of\s+)?supply)/i.test(line)) {
+      // Avoid grabbing the year from "September 2025 Months…"
+      if (/\b20\d{2}\b/.test(line)) {
+        const candidate = pickNumberAround(i+1, true, 2);
+        const val = sane.mois(candidate);
+        if (val != null) out.monthsSupply = val;
+      } else {
+        const candidate = firstFloat(line) ?? pickNumberAround(i+1, true, 2);
+        const val = sane.mois(candidate);
+        if (val != null) out.monthsSupply = val;
+      }
       continue;
     }
-    if (/(^|\s)(active\s+listings|active\s+inventory|inventory\s+of\s+homes\s+for\s+sale|active\s+residential\s+listings|active\s+listings.*month\s+end)(\s|$)/i.test(line)) {
-      const raw = firstInt(line) ?? pickNumberAround(i+1, false, 3);
-      if (collect) matches.push({ metric: "activeListings", line, raw });
-      if (isNum(raw)) out.activeListings = raw;
+
+    // Active listings / active inventory
+    if (out.activeListings == null && /(active\s+listings|active\s+inventory|inventory\s+of\s+homes\s+for\s+sale|active\s+residential\s+listings|active\s+listings.*month\s+end)/i.test(line)) {
+      const candidate = firstInt(line) ?? pickNumberAround(i+1, false, 3);
+      const val = sane.active(candidate, line);
+      if (val != null) out.activeListings = val;
       continue;
     }
   }
 
-  return { values: out, matches };
+  return out;
 }
 
 function isNum(n){ return typeof n === "number" && Number.isFinite(n); }
-function round1(n){ return Math.round(n*10)/10; }
