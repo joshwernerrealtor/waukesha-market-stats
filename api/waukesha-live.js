@@ -121,7 +121,7 @@ function ymd(d){
 }
 function titleCase(s){ return s.replace(/\w\S*/g, t => t[0].toUpperCase()+t.slice(1).toLowerCase()); }
 
-/* ====== Parser with guardrails: first-good wins + sanity filters ====== */
+/* ====== Parser with guardrails: first-good wins + sanity filters + de-dup ====== */
 function parseRprStats(txt){
   if (!txt) return emptyStats();
 
@@ -130,7 +130,6 @@ function parseRprStats(txt){
   const firstInt   = s => { const m = String(s||"").match(/-?\d{1,3}(?:,\d{3})*|\d+/); return m ? parseInt(m[0].replace(/,/g,""),10) : null; };
   const firstFloat = s => { const m = String(s||"").match(/-?\d+(?:\.\d+)?/);         return m ? parseFloat(m[0]) : null; };
 
-  // pull next number within a small window after a label
   function pickNumberAround(idx, asFloat = false, lookAhead = 3){
     for (let i = idx; i <= Math.min(idx + lookAhead, lines.length - 1); i++){
       const n = asFloat ? firstFloat(lines[i]) : firstInt(lines[i]);
@@ -139,40 +138,33 @@ function parseRprStats(txt){
     return null;
   }
 
-  // sanity checks per metric
   const sane = {
     price(n, line) {
       if (!Number.isFinite(n)) return null;
       if (/\$|price/i.test(line)) {
-        // If it's a price context, allow large numbers but enforce a floor
         if (n >= 20000 && n <= 2000000) return n;
         return null;
       }
-      // If not a price context, still accept if it looks like a real price
       if (n >= 20000 && n <= 2000000) return n;
       return null;
     },
-    closed(n) {
-      return Number.isFinite(n) && n >= 0 && n < 5000 ? n : null;
-    },
-    dom(n) {
-      return Number.isFinite(n) && n >= 0 && n <= 365 ? n : null;
-    },
+    closed(n) { return Number.isFinite(n) && n >= 0 && n < 5000 ? n : null; },
+    dom(n) { return Number.isFinite(n) && n >= 0 && n <= 365 ? n : null; },
     mois(n) {
-      // ignore obvious year tokens and nonsense
       if (!Number.isFinite(n)) return null;
       if (n >= 0 && n < 50) return Math.round(n*10)/10;
       return null;
     },
     active(n, line) {
-      // reject dollar amounts or lines mentioning Price
       if (!Number.isFinite(n)) return null;
-      if (/\$|price/i.test(line)) return null;
-      return (n >= 0 && n < 50000) ? n : null;
+      if (/\$|price/i.test(line)) return null;   // reject amounts
+      return (n >= 0 && n < 50000) ? n : null;   // wide but sane
     }
   };
 
-  // "first good wins" so later junk doesn't overwrite correct values
+  const monthRegex = /\b(January|February|March|April|May|June|July|August|September|October|November|December)\b/i;
+  const yearRegex  = /\b20\d{2}\b/;
+
   const out = { medianPrice: null, closed: null, dom: null, monthsSupply: null, activeListings: null };
 
   for (let i = 0; i < lines.length; i++){
@@ -204,23 +196,35 @@ function parseRprStats(txt){
 
     // Months supply / inventory
     if (out.monthsSupply == null && /(months\s+of\s+inventory|months\s+(of\s+)?supply)/i.test(line)) {
-      // Avoid grabbing the year from "September 2025 Months…"
-      if (/\b20\d{2}\b/.test(line)) {
-        const candidate = pickNumberAround(i+1, true, 2);
-        const val = sane.mois(candidate);
-        if (val != null) out.monthsSupply = val;
-      } else {
-        const candidate = firstFloat(line) ?? pickNumberAround(i+1, true, 2);
-        const val = sane.mois(candidate);
-        if (val != null) out.monthsSupply = val;
-      }
+      // Avoid grabbing the year from "September 2025 Months …"
+      const candidate = (yearRegex.test(line) || monthRegex.test(line))
+        ? pickNumberAround(i+1, true, 2)
+        : (firstFloat(line) ?? pickNumberAround(i+1, true, 2));
+      const val = sane.mois(candidate);
+      if (val != null) out.monthsSupply = val;
       continue;
     }
 
     // Active listings / active inventory
     if (out.activeListings == null && /(active\s+listings|active\s+inventory|inventory\s+of\s+homes\s+for\s+sale|active\s+residential\s+listings|active\s+listings.*month\s+end)/i.test(line)) {
-      const candidate = firstInt(line) ?? pickNumberAround(i+1, false, 3);
-      const val = sane.active(candidate, line);
+      // If the label line contains month/year, it's likely a chart header; skip that number and look ahead.
+      let candidate = (yearRegex.test(line) || monthRegex.test(line))
+        ? pickNumberAround(i+1, false, 3)
+        : (firstInt(line) ?? pickNumberAround(i+1, false, 3));
+
+      let val = sane.active(candidate, line);
+
+      // Extra guard: don't mirror Closed Sales. If equal, try to find a different sane number nearby.
+      if (val != null && out.closed != null && val === out.closed) {
+        for (let j = i+1; j <= Math.min(i+5, lines.length - 1); j++){
+          const alt = firstInt(lines[j]);
+          const altVal = sane.active(alt, lines[j]);
+          if (altVal != null && altVal !== out.closed) { val = altVal; break; }
+        }
+        // If we didn't find a non-duplicate sane value, null it out rather than lying.
+        if (val === out.closed) val = null;
+      }
+
       if (val != null) out.activeListings = val;
       continue;
     }
