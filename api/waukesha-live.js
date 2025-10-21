@@ -1,13 +1,14 @@
 // pages/api/waukesha-live.js
-// Auto-extracts Waukesha County stats from the two official RPR PDFs.
+// Auto-extracts Waukesha County stats from RPR PDFs (SF + Condo) with debug mode.
 // Pulls: Median Price, Closed Sales, Days on Market, Months of Inventory/Supply, Active Listings.
-// Sets updatedAt from the PDFs' Last-Modified header. Caches 5 min at the edge.
-// Requires "pdf-parse" in package.json. Do NOT run this route on the Edge runtime.
+// Sets updatedAt from Last-Modified. Cache: 5 min. Requires "pdf-parse" in package.json.
 
 import pdfParse from "pdf-parse";
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=3600");
+
+  const debug = String(req.query.debug || "") === "1";
 
   // Update these only if RPR rotates the IDs
   const SF_URL    = "https://www.narrpr.com/reports-v2/c296fac6-035d-4e9a-84fd-28455ab0339f/pdf";
@@ -32,13 +33,13 @@ export default async function handler(req, res) {
     const monthLabel = detectMonth(sfText) || detectMonth(condoText) || fallbackMonth();
     const key = monthKeyFromLabel(monthLabel); // "YYYY-MM"
 
-    const sfStats    = parseRprStats(sfText);
-    const condoStats = parseRprStats(condoText);
+    const sfParse   = parseRprStats(sfText, { collectMatches: debug });
+    const condoParse= parseRprStats(condoText, { collectMatches: debug });
 
     const months = {
       [key]: {
-        sf: sfStats,
-        condo: condoStats,
+        sf: pruneTo5(sfParse.values),
+        condo: pruneTo5(condoParse.values),
         sfReport: SF_URL,
         condoReport: CONDO_URL
       }
@@ -50,7 +51,28 @@ export default async function handler(req, res) {
       updatedAt = ymd(new Date(yy, mm - 1, 1));
     }
 
-    res.status(200).json({ updatedAt, months });
+    const payload = { updatedAt, months };
+
+    if (debug) {
+      payload.__debug = {
+        monthLabel,
+        key,
+        sf: {
+          matches: sfParse.matches.slice(0, 30), // keep it readable
+          sample: sfText.split("\n").slice(0, 60) // top of doc
+        },
+        condo: {
+          matches: condoParse.matches.slice(0, 30),
+          sample: condoText.split("\n").slice(0, 60)
+        },
+        headers: {
+          sfLastModified: sfHead.lastModified?.toISOString() || null,
+          condoLastModified: condoHead.lastModified?.toISOString() || null
+        }
+      };
+    }
+
+    res.status(200).json(payload);
   } catch (err) {
     // Return a safe shape so the UI keeps working
     const today = new Date();
@@ -72,9 +94,18 @@ export default async function handler(req, res) {
 function emptyStats(){
   return { medianPrice: null, closed: null, dom: null, monthsSupply: null, activeListings: null };
 }
+function pruneTo5(v){
+  // ensures only the 5 fields your UI expects
+  return {
+    medianPrice: v.medianPrice ?? null,
+    closed: v.closed ?? null,
+    dom: v.dom ?? null,
+    monthsSupply: v.monthsSupply ?? null,
+    activeListings: v.activeListings ?? null
+  };
+}
 
 async function headOrByte(url){
-  // HEAD for headers; if blocked, GET first byte (still gives headers)
   let r = await fetch(url, { method: "HEAD" }).catch(() => null);
   if (!r || !r.ok) r = await fetch(url, { method: "GET", headers: { range:"bytes=0-0" } }).catch(() => null);
   const lm = r?.headers?.get("last-modified") || r?.headers?.get("Last-Modified");
@@ -89,8 +120,8 @@ async function fetchPdfText(url){
   const parsed = await pdfParse(buf);
   return (parsed.text || "")
     .replace(/\r/g,"")
-    .replace(/[ \t]+/g," ")   // collapse spaces
-    .replace(/\n{2,}/g,"\n"); // soften line breaks
+    .replace(/[ \t]+/g," ")
+    .replace(/\n{2,}/g,"\n");
 }
 
 function detectMonth(txt){
@@ -99,7 +130,6 @@ function detectMonth(txt){
   const m = txt.match(re);
   return m ? titleCase(m[0]) : null;
 }
-
 function monthKeyFromLabel(label){
   if (!label) return fallbackMonthKey();
   const [mon, year] = label.split(/\s+/);
@@ -108,7 +138,6 @@ function monthKeyFromLabel(label){
   const yy = parseInt(year,10);
   return `${yy}-${String(mm).padStart(2,"0")}`;
 }
-
 function fallbackMonth(){
   const d = new Date();
   d.setMonth(d.getMonth()-1, 1);
@@ -127,26 +156,17 @@ function ymd(d){
 }
 function titleCase(s){ return s.replace(/\w\S*/g, t => t[0].toUpperCase()+t.slice(1).toLowerCase()); }
 
-/* ====== Smarter parser: tolerates label synonyms and values on next lines ======
-Typical lines in RPR PDFs:
-  Median Sold Price $520,000
-  Closed Sales 312
-  Median Days in RPR 48
-  Months of Inventory 1.5
-  Active Listings 402
+/* ====== Parser with line-window + synonyms + optional debug matches ====== */
+function parseRprStats(txt, opts = {}){
+  if (!txt) return { values: emptyStats(), matches: [] };
 
-RPR loves putting the number on the next line or renaming labels, so we scan a small window.
-*/
-function parseRprStats(txt){
-  if (!txt) return emptyStats();
-
+  const collect = opts.collectMatches === true;
   const lines = txt.split(/\n/).map(s => s.trim()).filter(Boolean);
+  const matches = [];
 
-  // Find first integer/float in a string
   const firstInt   = s => { const m = String(s||"").match(/-?\d{1,3}(?:,\d{3})*|\d+/); return m ? parseInt(m[0].replace(/,/g,""),10) : null; };
   const firstFloat = s => { const m = String(s||"").match(/-?\d+(?:\.\d+)?/);         return m ? parseFloat(m[0]) : null; };
 
-  // Scan forward a few lines to grab a number after a matched label
   function pickNumberAround(idx, asFloat = false, lookAhead = 3){
     for (let i = idx; i <= Math.min(idx + lookAhead, lines.length - 1); i++){
       const n = asFloat ? firstFloat(lines[i]) : firstInt(lines[i]);
@@ -155,50 +175,44 @@ function parseRprStats(txt){
     return null;
   }
 
-  const out = {
-    medianPrice: null,
-    closed: null,
-    dom: null,
-    monthsSupply: null,
-    activeListings: null
-  };
+  const out = { medianPrice: null, closed: null, dom: null, monthsSupply: null, activeListings: null };
 
   for (let i = 0; i < lines.length; i++){
     const line = lines[i];
 
-    // Median price
     if (/(^|\s)median\s+(sold\s+)?price(\s|$)/i.test(line)) {
       const raw = firstInt(line) ?? pickNumberAround(i+1, false, 2);
+      if (collect) matches.push({ metric: "medianPrice", line, raw });
       if (isNum(raw)) out.medianPrice = raw;
       continue;
     }
-    // Closed sales (aka sold listings)
     if (/(^|\s)(closed\s+sales|sold\s+listings|closed\s+listings)(\s|$)/i.test(line)) {
       const raw = firstInt(line) ?? pickNumberAround(i+1, false, 3);
+      if (collect) matches.push({ metric: "closed", line, raw });
       if (isNum(raw)) out.closed = raw;
       continue;
     }
-    // Days on market (aka Median Days in RPR)
     if (/(^|\s)(median\s+days\s+(in\s+rpr|on\s+market)|days\s+on\s+market)(\s|$)/i.test(line)) {
       const raw = firstInt(line) ?? pickNumberAround(i+1, false, 2);
+      if (collect) matches.push({ metric: "dom", line, raw });
       if (isNum(raw)) out.dom = raw;
       continue;
     }
-    // Months supply / inventory
     if (/(^|\s)(months\s+of\s+inventory|months\s+(of\s+)?supply)(\s|$)/i.test(line)) {
       const raw = firstFloat(line) ?? pickNumberAround(i+1, true, 2);
+      if (collect) matches.push({ metric: "monthsSupply", line, raw });
       if (isNum(raw)) out.monthsSupply = round1(raw);
       continue;
     }
-    // Active listings (aka active inventory)
     if (/(^|\s)(active\s+listings|active\s+inventory|inventory\s+of\s+homes\s+for\s+sale|active\s+residential\s+listings|active\s+listings.*month\s+end)(\s|$)/i.test(line)) {
       const raw = firstInt(line) ?? pickNumberAround(i+1, false, 3);
+      if (collect) matches.push({ metric: "activeListings", line, raw });
       if (isNum(raw)) out.activeListings = raw;
       continue;
     }
   }
 
-  return out;
+  return { values: out, matches };
 }
 
 function isNum(n){ return typeof n === "number" && Number.isFinite(n); }
