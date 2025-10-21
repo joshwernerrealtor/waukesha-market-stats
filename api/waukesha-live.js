@@ -1,32 +1,52 @@
 // pages/api/waukesha-live.js
-// Returns Waukesha stats + updatedAt that tracks when RPR refreshed the PDFs.
-// Priority for updatedAt (first-good wins):
-// 1) Max(Last-Modified) from the two RPR PDF URLs (HEAD, fallback GET range)
-// 2) WAU_UPDATED_AT env var (YYYY-MM-DD)
-// 3) First day of the latest month key (YYYY-MM-01)
+// Returns Waukesha stats + updatedAt via RPR PDFs' Last-Modified.
+// updatedAt priority: Last-Modified → WAU_UPDATED_AT env → first day of latest month key.
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=3600");
 
-  // ----- YOUR CURRENT DATA (update these when you refresh from RPR) -----
+  // ----- DATA (add closed & activeListings; null is fine until you have real values) -----
   const months = {
     "2025-09": {
-      sf:     { medianPrice: 520000, dom: 48,    monthsSupply: 1.48 },
-      condo:  { medianPrice: 389500, dom: 54,    monthsSupply: 2.61 },
+      sf: {
+        medianPrice: 520000,
+        closed: null,
+        dom: 48,
+        monthsSupply: 1.48,
+        activeListings: null
+      },
+      condo: {
+        medianPrice: 389500,
+        closed: null,
+        dom: 54,
+        monthsSupply: 2.61,
+        activeListings: null
+      },
       sfReport:    "https://www.narrpr.com/reports-v2/c296fac6-035d-4e9a-84fd-28455ab0339f/pdf",
       condoReport: "https://www.narrpr.com/reports-v2/5a675486-5c7b-4bb0-9946-0cffa3070f05/pdf"
     },
     "2025-08": {
-      sf:     { medianPrice: 509600, dom: 48.96, monthsSupply: 1.5096 },
-      condo:  { medianPrice: 381710, dom: 55.08, monthsSupply: 2.6622 },
+      sf: {
+        medianPrice: 509600,
+        closed: null,
+        dom: 48.96,
+        monthsSupply: 1.5096,
+        activeListings: null
+      },
+      condo: {
+        medianPrice: 381710,
+        closed: null,
+        dom: 55.08,
+        monthsSupply: 2.6622,
+        activeListings: null
+      },
       sfReport:    "https://www.narrpr.com/reports-v2/c296fac6-035d-4e9a-84fd-28455ab0339f/pdf",
       condoReport: "https://www.narrpr.com/reports-v2/5a675486-5c7b-4bb0-9946-0cffa3070f05/pdf"
     }
   };
-  // ----------------------------------------------------------------------
+  // --------------------------------------------------------------------------------------
 
   try {
-    // Find the newest RPR PDF "Last-Modified" among the latest month’s links
     const latestKey = Object.keys(months).sort().pop();
     const latest = months[latestKey] || {};
     const urls = [latest.sfReport, latest.condoReport].filter(Boolean);
@@ -73,7 +93,6 @@ export default async function handler(req, res) {
 async function lastModifiedDate(url) {
   let res = await fetch(url, { method: "HEAD" }).catch(() => null);
   if (!res || !res.ok) {
-    // Some CDNs don’t allow HEAD; grab first byte so we still get headers
     res = await fetch(url, { method: "GET", headers: { range: "bytes=0-0" } }).catch(() => null);
   }
   if (!res || !res.ok) return null;
