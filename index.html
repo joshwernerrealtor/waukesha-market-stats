@@ -279,64 +279,75 @@
 
 <script>
   (function () {
-    const list = document.getElementById('rates-list');
-    const countEl = document.getElementById('rates-count');
-    const updatedEl = document.getElementById('rates-updated');
+    function boot() {
+      const list = document.getElementById('rates-list');
+      const countEl = document.getElementById('rates-count');
+      const updatedEl = document.getElementById('rates-updated');
 
-    function rowHTML(item){
-      const name = item.name || 'Lender';
-      const product = item.product || '30 yr fixed';
-      const rate = (item.rate != null) ? `${item.rate}%` : '—';
-      const apr  = (item.apr  != null) ? `${item.apr}% APR` : '';
-      const points = item.points ? `${item.points} pts` : '';
-      const meta = [apr, points].filter(Boolean).join(' • ');
+      // If Google’s renderer or a partial DOM misses these, bail quietly.
+      if (!list || !countEl || !updatedEl) return;
 
-      const links = [
-        item.url ? `<a class="tag" href="${item.url}" target="_blank" rel="noopener">Rate page</a>` : '',
-        item.contactUrl ? `<a class="tag" href="${item.contactUrl}" target="_blank" rel="noopener">Apply</a>` : ''
-      ].filter(Boolean).join('');
-
-      return `
-        <div class="rate-row">
-          <div class="left">
-            <h4>${name}</h4>
-            <div class="tags">
-              <span class="tag">${product}</span>
-              ${links}
+      function rowHTML(item){
+        const name = item.name || 'Lender';
+        const product = item.product || '30 yr fixed';
+        const rate = (item.rate != null) ? `${item.rate}%` : '—';
+        const apr  = (item.apr  != null) ? `${item.apr}% APR` : '';
+        const points = item.points ? `${item.points} pts` : '';
+        const meta = [apr, points].filter(Boolean).join(' • ');
+        const links = [
+          item.url ? `<a class="tag" href="${item.url}" target="_blank" rel="noopener">Rate page</a>` : '',
+          item.contactUrl ? `<a class="tag" href="${item.contactUrl}" target="_blank" rel="noopener">Apply</a>` : ''
+        ].filter(Boolean).join('');
+        return `
+          <div class="rate-row">
+            <div class="left">
+              <h4>${name}</h4>
+              <div class="tags">
+                <span class="tag">${product}</span>
+                ${links}
+              </div>
             </div>
-          </div>
-          <div class="nums">
-            <div class="num">${rate}</div>
-            <div class="sub">${meta}</div>
-          </div>
-        </div>`;
-    }
-
-    async function getRates() {
-      try {
-        const res = await fetch('/api/rates?bust=' + Date.now(), { headers: { 'accept': 'application/json' }, cache: 'no-store' });
-        if (!res.ok) throw new Error('Failed to load rates');
-        const payload = await res.json();
-        const items = Array.isArray(payload?.lenders) ? payload.lenders : [];
-
-        list.setAttribute('aria-busy', 'false');
-        list.innerHTML = items.length ? items.map(rowHTML).join('') :
-          `<div class="rate-row"><div class="left"><h4>Rates unavailable</h4><small>Please try again shortly.</small></div><div class="nums"><div class="num">—</div></div></div>`;
-
-        countEl.textContent = `${items.length} ${items.length === 1 ? 'lender' : 'lenders'}`;
-        updatedEl.hidden = !payload.generatedAt;
-        if (!updatedEl.hidden) updatedEl.textContent = `Refreshed ${new Date(payload.generatedAt).toLocaleString()}`;
-      } catch (err) {
-        list.setAttribute('aria-busy', 'false');
-        list.innerHTML = `<div class="rate-row"><div class="left"><h4>Rates unavailable</h4><small>Please try again shortly.</small></div><div class="nums"><div class="num">—</div></div></div>`;
-        countEl.textContent = '0 lenders';
-        updatedEl.hidden = true;
-        console.error(err);
+            <div class="nums">
+              <div class="num">${rate}</div>
+              <div class="sub">${meta}</div>
+            </div>
+          </div>`;
       }
+
+      async function getRates() {
+        try {
+          const res = await fetch('/api/rates?bust=' + Date.now(), { headers: { 'accept': 'application/json' }, cache: 'no-store' });
+          if (!res.ok) throw new Error('Failed to load rates');
+          const payload = await res.json();
+          const items = Array.isArray(payload?.lenders) ? payload.lenders : [];
+
+          list.setAttribute('aria-busy', 'false');
+          list.innerHTML = items.length ? items.map(rowHTML).join('') :
+            `<div class="rate-row"><div class="left"><h4>Rates unavailable</h4><small>Please try again shortly.</small></div><div class="nums"><div class="num">—</div></div></div>`;
+
+          countEl.textContent = `${items.length} ${items.length === 1 ? 'lender' : 'lenders'}`;
+          updatedEl.hidden = !payload.generatedAt;
+          if (!updatedEl.hidden) updatedEl.textContent = `Refreshed ${new Date(payload.generatedAt).toLocaleString()}`;
+        } catch (err) {
+          list.setAttribute('aria-busy', 'false');
+          list.innerHTML = `<div class="rate-row"><div class="left"><h4>Rates unavailable</h4><small>Please try again shortly.</small></div><div class="nums"><div class="num">—</div></div></div>`;
+          countEl.textContent = '0 lenders';
+          updatedEl.hidden = true;
+          // Don’t throw; Googlebot hates drama.
+        }
+      }
+
+      // First paint + gentle refresh
+      getRates();
+      setInterval(getRates, 15 * 60 * 1000);
     }
 
-    getRates();
-    setInterval(getRates, 15 * 60 * 1000);
+    // If the DOM isn’t ready, wait. If it is, go now.
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', boot, { once: true });
+    } else {
+      boot();
+    }
   })();
 </script>
 
