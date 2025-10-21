@@ -1,8 +1,7 @@
 // pages/api/waukesha-live.js
-// Extracts Waukesha County stats from two official RPR PDFs (SF + Condo):
+// Extracts Waukesha County stats from two RPR PDFs (SF + Condo):
 // Median Price, Closed Sales, Days on Market, Months Supply, Active Listings.
-// updatedAt comes from Last-Modified headers. Cache: 5 min. Requires pdf-parse.
-// Do NOT run this route on Edge.
+// updatedAt from Last-Modified. Cache: 5 min. Requires pdf-parse. Not Edge.
 
 import pdfParse from "pdf-parse";
 
@@ -28,14 +27,12 @@ export default async function handler(req, res) {
     const sfStats    = parseRprStats(sfText);
     const condoStats = parseRprStats(condoText);
 
-    const months = {
-      [key]: {
-        sf: sfStats,
-        condo: condoStats,
-        sfReport: SF_URL,
-        condoReport: CONDO_URL
-      }
-    };
+    const months = { [key]: {
+      sf: sfStats,
+      condo: condoStats,
+      sfReport: SF_URL,
+      condoReport: CONDO_URL
+    }};
 
     if (!updatedAt) {
       const [yy, mm] = key.split("-").map(Number);
@@ -46,15 +43,16 @@ export default async function handler(req, res) {
   } catch (err) {
     const today = new Date();
     const key = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}`;
-    const months = {
-      [key]: {
+    res.status(200).json({
+      updatedAt: ymd(today),
+      months: { [key]: {
         sf: emptyStats(),
         condo: emptyStats(),
         sfReport: "https://www.narrpr.com/",
         condoReport: "https://www.narrpr.com/"
-      }
-    };
-    res.status(200).json({ updatedAt: ymd(today), months, error: String(err) });
+      }},
+      error: String(err)
+    });
   }
 }
 
@@ -115,7 +113,7 @@ function ymd(d){
 }
 function titleCase(s){ return s.replace(/\w\S*/g, t => t[0].toUpperCase()+t.slice(1).toLowerCase()); }
 
-/* ====== Parser: strict where it matters, tolerant where needed ====== */
+/* ====== Parser: tight Closed Sales, robust Active, first-good wins ====== */
 function parseRprStats(txt){
   if (!txt) return emptyStats();
 
@@ -123,10 +121,13 @@ function parseRprStats(txt){
 
   const firstInt   = s => { const m = String(s||"").match(/-?\d{1,3}(?:,\d{3})*|\d+/); return m ? parseInt(m[0].replace(/,/g,""),10) : null; };
   const firstFloat = s => { const m = String(s||"").match(/-?\d+(?:\.\d+)?/);         return m ? parseFloat(m[0]) : null; };
+  const pctOrMoM   = /%|MoM/i;
 
   function pickNumberAround(idx, asFloat = false, lookAhead = 3){
     for (let i = idx; i <= Math.min(idx + lookAhead, lines.length - 1); i++){
-      const n = asFloat ? firstFloat(lines[i]) : firstInt(lines[i]);
+      const ln = lines[i];
+      if (pctOrMoM.test(ln)) continue; // skip percent lines
+      const n = asFloat ? firstFloat(ln) : firstInt(ln);
       if (Number.isFinite(n)) return n;
     }
     return null;
@@ -155,18 +156,18 @@ function parseRprStats(txt){
     }
   };
 
-  // Label regexes
+  // Labels
   const reMedianPrice = /(median\s+(sold\s+)?price)/i;
   const reDom         = /(median\s+days\s+(in\s+rpr|on\s+market)|days\s+on\s+market)/i;
   const reMonths      = /(months\s+of\s+inventory|months\s+(of\s+)?supply)/i;
 
-  // For Closed Sales: allow "Closed Sales" or "Sold Listings", but avoid chart headers
-  const reClosedLabelLoose = /(closed\s+sales|sold\s+listings|closed\s+listings)/i;
-  const junkNearClosed = /(median|price|active|inventory|months|supply|list\s*price)/i;
+  // Closed Sales: allow Closed Sales / Sold Listings / Total Sales, but avoid headers + junk
+  const reClosedAny   = /(closed\s+sales|sold\s+listings|total\s+sales|closed\s+listings)/i;
+  const junkClosed    = /(median|price|active|inventory|months|supply|list\s*price|sold\s*to\s*list)/i;
 
-  // For Active Listings: strict, avoid headers and sales/price text
+  // Active: strict, avoid headers/junk, don't mirror Closed
   const reActiveLabel = /(^|\s)active\s+(listings|residential\s+listings)(\s|$)/i;
-  const junkNearActive = /(sold|sales|median|price|list\s*price)/i;
+  const junkActive    = /(sold|sales|median|price|list\s*price)/i;
 
   const out = { medianPrice: null, closed: null, dom: null, monthsSupply: null, activeListings: null };
 
@@ -181,19 +182,24 @@ function parseRprStats(txt){
       continue;
     }
 
-    // Closed Sales — accept Closed Sales or Sold Listings, but skip chart headers (month/year) or junky lines
-    if (out.closed == null && reClosedLabelLoose.test(line)) {
-      if (monthRegex.test(line) || yearRegex.test(line) || junkNearClosed.test(line)) {
-        // chart header-y; scan forward for a clean integer not near bad words
-        const val = findForward(lines, i+1, 6, (ln) => {
-          if (monthRegex.test(ln) || yearRegex.test(ln) || junkNearClosed.test(ln)) return null;
+    // Closed Sales — tolerant label, but skip month/year headers and junk; then scan forward wider
+    if (out.closed == null && reClosedAny.test(line)) {
+      if (monthRegex.test(line) || yearRegex.test(line) || junkClosed.test(line)) {
+        const val = findForward(lines, i+1, 10, (ln) => {
+          if (monthRegex.test(ln) || yearRegex.test(ln) || junkClosed.test(ln) || pctOrMoM.test(ln)) return null;
           return sane.closed(firstInt(ln));
         });
         if (val != null) { out.closed = val; continue; }
       } else {
-        const candidate = firstInt(line) ?? pickNumberAround(i+1, false, 3);
+        const candidate = firstInt(line) ?? pickNumberAround(i+1, false, 4);
         const val = sane.closed(candidate);
         if (val != null) { out.closed = val; continue; }
+        // last try: forward window
+        const val2 = findForward(lines, i+1, 10, (ln) => {
+          if (monthRegex.test(ln) || yearRegex.test(ln) || junkClosed.test(ln) || pctOrMoM.test(ln)) return null;
+          return sane.closed(firstInt(ln));
+        });
+        if (val2 != null) { out.closed = val2; continue; }
       }
     }
 
@@ -215,12 +221,12 @@ function parseRprStats(txt){
       continue;
     }
 
-    // Active listings — strict, skip headers, avoid sales/price text, don't mirror Closed
+    // Active listings — strict, skip headers/junk, avoid Closed duplication
     if (out.activeListings == null && reActiveLabel.test(line)) {
       let val = null;
-      if (yearRegex.test(line) || monthRegex.test(line) || junkNearActive.test(line)) {
+      if (yearRegex.test(line) || monthRegex.test(line) || junkActive.test(line)) {
         val = findForward(lines, i+1, 8, (ln) => {
-          if (monthRegex.test(ln) || yearRegex.test(ln) || junkNearActive.test(ln)) return null;
+          if (monthRegex.test(ln) || yearRegex.test(ln) || junkActive.test(ln) || pctOrMoM.test(ln)) return null;
           const cand = sane.active(firstInt(ln), ln);
           if (cand != null && (out.closed == null || cand !== out.closed)) return cand;
           return null;
@@ -231,7 +237,7 @@ function parseRprStats(txt){
           val = cand;
         } else {
           val = findForward(lines, i+1, 8, (ln) => {
-            if (monthRegex.test(ln) || yearRegex.test(ln) || junkNearActive.test(ln)) return null;
+            if (monthRegex.test(ln) || yearRegex.test(ln) || junkActive.test(ln) || pctOrMoM.test(ln)) return null;
             const c = sane.active(firstInt(ln), ln);
             if (c != null && (out.closed == null || c !== out.closed)) return c;
             return null;
