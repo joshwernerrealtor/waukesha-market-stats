@@ -1,7 +1,8 @@
 // pages/api/waukesha-live.js
-// Extracts Waukesha County stats from the two official RPR PDFs (SF + Condo).
-// Pulls: Median Price, Closed Sales, Days on Market, Months of Inventory/Supply, Active Listings.
-// Sets updatedAt from Last-Modified. Cache: 5 min. Requires "pdf-parse". Do NOT run at Edge.
+// Extracts Waukesha County stats from two official RPR PDFs (SF + Condo):
+// Median Price, Closed Sales, Days on Market, Months Supply, Active Listings.
+// updatedAt comes from Last-Modified headers. Cache: 5 min. Requires pdf-parse.
+// Do NOT run this route on Edge.
 
 import pdfParse from "pdf-parse";
 
@@ -12,7 +13,6 @@ export default async function handler(req, res) {
   const CONDO_URL = "https://www.narrpr.com/reports-v2/5a675486-5c7b-4bb0-9946-0cffa3070f05/pdf";
 
   try {
-    // updatedAt from headers
     const [sfHead, condoHead] = await Promise.all([headOrByte(SF_URL), headOrByte(CONDO_URL)]);
     const lmDates = [sfHead.lastModified, condoHead.lastModified].filter(Boolean);
     let updatedAt = lmDates.length ? ymd(new Date(Math.max(...lmDates.map(d => d.getTime())))) : null;
@@ -20,7 +20,6 @@ export default async function handler(req, res) {
       updatedAt = process.env.WAU_UPDATED_AT;
     }
 
-    // parse both PDFs
     const [sfText, condoText] = await Promise.all([fetchPdfText(SF_URL), fetchPdfText(CONDO_URL)]);
 
     const monthLabel = detectMonth(sfText) || detectMonth(condoText) || fallbackMonth();
@@ -116,7 +115,7 @@ function ymd(d){
 }
 function titleCase(s){ return s.replace(/\w\S*/g, t => t[0].toUpperCase()+t.slice(1).toLowerCase()); }
 
-/* ====== Parser: strict labels, first-good wins, sanity filters ====== */
+/* ====== Parser: strict where it matters, tolerant where needed ====== */
 function parseRprStats(txt){
   if (!txt) return emptyStats();
 
@@ -133,6 +132,9 @@ function parseRprStats(txt){
     return null;
   }
 
+  const monthRegex = /\b(January|February|March|April|May|June|July|August|September|October|November|December)\b/i;
+  const yearRegex  = /\b20\d{2}\b/;
+
   // sanity gates
   const sane = {
     price(n, line) {
@@ -143,7 +145,7 @@ function parseRprStats(txt){
       }
       return (n >= 20000 && n <= 2000000) ? n : null;
     },
-    closed(n) { return Number.isFinite(n) && n >= 0 && n < 5000 ? n : null; },
+    closed(n) { return Number.isFinite(n) && n >= 0 && n < 10000 ? n : null; },
     dom(n)    { return Number.isFinite(n) && n >= 0 && n <= 365 ? n : null; },
     mois(n)   { return Number.isFinite(n) && n >= 0 && n < 50 ? Math.round(n*10)/10 : null; },
     active(n, line) {
@@ -153,16 +155,18 @@ function parseRprStats(txt){
     }
   };
 
-  const monthRegex = /\b(January|February|March|April|May|June|July|August|September|October|November|December)\b/i;
-  const yearRegex  = /\b20\d{2}\b/;
-  const junkNearActive = /(sold|sales|median|price|list\s*price)/i;
-
-  // strict label regexes
+  // Label regexes
   const reMedianPrice = /(median\s+(sold\s+)?price)/i;
-  const reClosedSales = /(^|\s)closed\s+sales(\s|$)/i;
   const reDom         = /(median\s+days\s+(in\s+rpr|on\s+market)|days\s+on\s+market)/i;
   const reMonths      = /(months\s+of\s+inventory|months\s+(of\s+)?supply)/i;
-  const reActive      = /(^|\s)active\s+(listings|residential\s+listings)(\s|$)/i;
+
+  // For Closed Sales: allow "Closed Sales" or "Sold Listings", but avoid chart headers
+  const reClosedLabelLoose = /(closed\s+sales|sold\s+listings|closed\s+listings)/i;
+  const junkNearClosed = /(median|price|active|inventory|months|supply|list\s*price)/i;
+
+  // For Active Listings: strict, avoid headers and sales/price text
+  const reActiveLabel = /(^|\s)active\s+(listings|residential\s+listings)(\s|$)/i;
+  const junkNearActive = /(sold|sales|median|price|list\s*price)/i;
 
   const out = { medianPrice: null, closed: null, dom: null, monthsSupply: null, activeListings: null };
 
@@ -177,13 +181,20 @@ function parseRprStats(txt){
       continue;
     }
 
-    // Closed Sales — ONLY this exact label; ignore "Sold Listings" entirely
-    if (out.closed == null && reClosedSales.test(line)) {
-      // Some PDFs put the number on the next line or two
-      const candidate = firstInt(line) ?? pickNumberAround(i+1, false, 3);
-      const val = sane.closed(candidate);
-      if (val != null) out.closed = val;
-      continue;
+    // Closed Sales — accept Closed Sales or Sold Listings, but skip chart headers (month/year) or junky lines
+    if (out.closed == null && reClosedLabelLoose.test(line)) {
+      if (monthRegex.test(line) || yearRegex.test(line) || junkNearClosed.test(line)) {
+        // chart header-y; scan forward for a clean integer not near bad words
+        const val = findForward(lines, i+1, 6, (ln) => {
+          if (monthRegex.test(ln) || yearRegex.test(ln) || junkNearClosed.test(ln)) return null;
+          return sane.closed(firstInt(ln));
+        });
+        if (val != null) { out.closed = val; continue; }
+      } else {
+        const candidate = firstInt(line) ?? pickNumberAround(i+1, false, 3);
+        const val = sane.closed(candidate);
+        if (val != null) { out.closed = val; continue; }
+      }
     }
 
     // DOM
@@ -204,19 +215,27 @@ function parseRprStats(txt){
       continue;
     }
 
-    // Active Listings — strict label; avoid chart headers and sales/price lines
-    if (out.activeListings == null && reActive.test(line)) {
-      // If label line looks like a chart header (has month/year), skip its number and scan forward.
+    // Active listings — strict, skip headers, avoid sales/price text, don't mirror Closed
+    if (out.activeListings == null && reActiveLabel.test(line)) {
       let val = null;
       if (yearRegex.test(line) || monthRegex.test(line) || junkNearActive.test(line)) {
-        val = findActiveForward(lines, i + 1, out.closed);
+        val = findForward(lines, i+1, 8, (ln) => {
+          if (monthRegex.test(ln) || yearRegex.test(ln) || junkNearActive.test(ln)) return null;
+          const cand = sane.active(firstInt(ln), ln);
+          if (cand != null && (out.closed == null || cand !== out.closed)) return cand;
+          return null;
+        });
       } else {
-        const cand = firstInt(line) ?? pickNumberAround(i+1, false, 3);
-        const saneVal = sane.active(cand, line);
-        if (saneVal != null && (out.closed == null || saneVal !== out.closed)) {
-          val = saneVal;
+        const cand = sane.active(firstInt(line) ?? pickNumberAround(i+1, false, 3), line);
+        if (cand != null && (out.closed == null || cand !== out.closed)) {
+          val = cand;
         } else {
-          val = findActiveForward(lines, i + 1, out.closed);
+          val = findForward(lines, i+1, 8, (ln) => {
+            if (monthRegex.test(ln) || yearRegex.test(ln) || junkNearActive.test(ln)) return null;
+            const c = sane.active(firstInt(ln), ln);
+            if (c != null && (out.closed == null || c !== out.closed)) return c;
+            return null;
+          });
         }
       }
       if (val != null) out.activeListings = val;
@@ -226,15 +245,10 @@ function parseRprStats(txt){
 
   return out;
 
-  // scan ahead up to ~8 lines for a clean "active listings" integer
-  function findActiveForward(linesArr, start, closedVal){
-    for (let j = start; j <= Math.min(start + 8, linesArr.length - 1); j++){
-      const ln = linesArr[j];
-      if (monthRegex.test(ln) || yearRegex.test(ln)) continue;   // chart headers
-      if (junkNearActive.test(ln)) continue;                     // sales/price/median text
-      const cand = firstInt(ln);
-      const val = sane.active(cand, ln);
-      if (val != null && (closedVal == null || val !== closedVal)) return val;
+  function findForward(arr, start, maxAhead, pick){
+    for (let j = start; j <= Math.min(start + maxAhead, arr.length - 1); j++){
+      const v = pick(arr[j]);
+      if (v != null) return v;
     }
     return null;
   }
