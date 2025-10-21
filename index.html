@@ -496,24 +496,38 @@
   }
 
   function paintMonth(key, dataObj){
-    const months=Object.keys(dataObj.months).sort();
-    const idx=months.indexOf(key); const cur=dataObj.months[key]; const prev=dataObj.months[months[idx-1]];
-    const [y,m]=key.split("-"); const label=new Date(+y, +m-1, 1).toLocaleDateString(undefined,{month:"long",year:"numeric"});
-    if (sfMonthEl) sfMonthEl.textContent=label;
-    if (condoMonthEl) condoMonthEl.textContent=label;
-    if (sfKpis) sfKpis.innerHTML="";
-    if (condoKpis) condoKpis.innerHTML="";
-    [
-      { key:"medianPrice",   label:"Median Price",   type:"currency" },
-      { key:"closed",        label:"Closed Sales",   type:"number"   },
-      { key:"dom",           label:"Days on Market", type:"number"   },
-      { key:"monthsSupply",  label:"Months Supply",  type:"number1"  },
-      { key:"activeListings",label:"Active Listings",type:"number"   }
-    ].forEach(m=>{
-      if (sfKpis) sfKpis.appendChild(kpiEl(m.label, cur.sf?.[m.key],    prev?.sf?.[m.key],    m.type));
-      if (condoKpis) condoKpis.appendChild(kpiEl(m.label, cur.condo?.[m.key], prev?.condo?.[m.key], m.type));
-    });
-  }
+  const months = Object.keys(dataObj.months).sort();
+  const idx = months.indexOf(key);
+  const cur = dataObj.months[key];
+  const prev = dataObj.months[months[idx-1]];
+  const [y,m] = key.split("-");
+  const label = new Date(+y, +m-1, 1).toLocaleDateString(undefined,{month:"long",year:"numeric"});
+
+  const sfMonthEl = document.getElementById("sfMonth");
+  const condoMonthEl = document.getElementById("condoMonth");
+  const sfKpis = document.getElementById("sfKpis");
+  const condoKpis = document.getElementById("condoKpis");
+
+  if (sfMonthEl) sfMonthEl.textContent = label;
+  if (condoMonthEl) condoMonthEl.textContent = label;
+  if (sfKpis) sfKpis.innerHTML = "";
+  if (condoKpis) condoKpis.innerHTML = "";
+
+  const METRICS = [
+    { key:"medianPrice",    label:"Median Price",    type:"currency" },
+    { key:"closed",         label:"Closed Sales",    type:"number"   },
+    { key:"dom",            label:"Days on Market",  type:"number"   },
+    { key:"monthsSupply",   label:"Months Supply",   type:"number1"  },
+    { key:"activeListings", label:"Active Listings", type:"number"   }
+  ];
+
+  const safe = (o,k) => (o && o[k] != null ? o[k] : undefined);
+
+  METRICS.forEach(m=>{
+    if (sfKpis) sfKpis.appendChild(kpiEl(m.label, safe(cur?.sf, m.key),    safe(prev?.sf, m.key),    m.type));
+    if (condoKpis) condoKpis.appendChild(kpiEl(m.label, safe(cur?.condo, m.key), safe(prev?.condo, m.key), m.type));
+  });
+}
 
   function renderCommunities(list){
     const grid = communityGrid; if (!grid) return;
