@@ -2,10 +2,9 @@
 // Auto-extracts Waukesha County stats from the two official RPR PDFs.
 // Pulls: Median Price, Closed Sales, Days on Market, Months of Inventory/Supply, Active Listings.
 // Sets updatedAt from the PDFs' Last-Modified header. Caches 5 min at the edge.
+// Requires "pdf-parse" in package.json. Do NOT run this route on the Edge runtime.
 
 import pdfParse from "pdf-parse";
-
-// DO NOT mark this route as "edge" runtime. It needs Node for pdf-parse.
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=3600");
@@ -100,6 +99,7 @@ function detectMonth(txt){
   const m = txt.match(re);
   return m ? titleCase(m[0]) : null;
 }
+
 function monthKeyFromLabel(label){
   if (!label) return fallbackMonthKey();
   const [mon, year] = label.split(/\s+/);
@@ -108,6 +108,7 @@ function monthKeyFromLabel(label){
   const yy = parseInt(year,10);
   return `${yy}-${String(mm).padStart(2,"0")}`;
 }
+
 function fallbackMonth(){
   const d = new Date();
   d.setMonth(d.getMonth()-1, 1);
@@ -126,28 +127,26 @@ function ymd(d){
 }
 function titleCase(s){ return s.replace(/\w\S*/g, t => t[0].toUpperCase()+t.slice(1).toLowerCase()); }
 
-/* ====== Parse RPR text into numbers ======
-Typical lines seen in the PDFs:
+/* ====== Smarter parser: tolerates label synonyms and values on next lines ======
+Typical lines in RPR PDFs:
   Median Sold Price $520,000
   Closed Sales 312
-  Median Days in RPR 48   (aka Days on Market)
-  Months of Inventory 1.48 (aka Months Supply)
+  Median Days in RPR 48
+  Months of Inventory 1.5
   Active Listings 402
-We tolerate light wording drift.
-*/
-/* ====== Replace parseRprStats with this smarter, line-window parser ====== */
 
+RPR loves putting the number on the next line or renaming labels, so we scan a small window.
+*/
 function parseRprStats(txt){
   if (!txt) return emptyStats();
 
   const lines = txt.split(/\n/).map(s => s.trim()).filter(Boolean);
 
-  // Helper: find first number in a string
+  // Find first integer/float in a string
   const firstInt   = s => { const m = String(s||"").match(/-?\d{1,3}(?:,\d{3})*|\d+/); return m ? parseInt(m[0].replace(/,/g,""),10) : null; };
   const firstFloat = s => { const m = String(s||"").match(/-?\d+(?:\.\d+)?/);         return m ? parseFloat(m[0]) : null; };
 
-  // Scan a small window of lines after a label to grab the number,
-  // because RPR often prints the value on the next line or two.
+  // Scan forward a few lines to grab a number after a matched label
   function pickNumberAround(idx, asFloat = false, lookAhead = 3){
     for (let i = idx; i <= Math.min(idx + lookAhead, lines.length - 1); i++){
       const n = asFloat ? firstFloat(lines[i]) : firstInt(lines[i]);
@@ -156,35 +155,7 @@ function parseRprStats(txt){
     return null;
   }
 
-  // Build a quick index of label matches: label regex → extractor
-  // Add tolerant synonyms RPR likes to use.
-  const labelers = [
-    {
-      re: /(median\s+(sold\s+)?price)/i,
-      get: (i) => firstInt(lines[i]) ?? pickNumberAround(i+1, false, 2)
-    },
-    {
-      re: /(closed\s+sales|sold\s+listings|closed\s+listings)/i,
-      get: (i) => firstInt(lines[i]) ?? pickNumberAround(i+1, false, 3)
-    },
-    {
-      re: /(median\s+days\s+(in\s+rpr|on\s+market)|days\s+on\s+market)/i,
-      get: (i) => firstInt(lines[i]) ?? pickNumberAround(i+1, false, 2)
-    },
-    {
-      re: /(months\s+of\s+inventory|months\s+(of\s+)?supply)/i,
-      get: (i) => {
-        const v = firstFloat(lines[i]) ?? pickNumberAround(i+1, true, 2);
-        return Number.isFinite(v) ? Math.round(v * 10) / 10 : null;
-      }
-    },
-    {
-      re: /(active\s+listings|active\s+inventory|inventory\s+of\s+homes\s+for\s+sale|active\s+residential\s+listings|active\s+listings.*month\s+end)/i,
-      get: (i) => firstInt(lines[i]) ?? pickNumberAround(i+1, false, 3)
-    }
-  ];
-
-  let out = {
+  const out = {
     medianPrice: null,
     closed: null,
     dom: null,
@@ -194,19 +165,36 @@ function parseRprStats(txt){
 
   for (let i = 0; i < lines.length; i++){
     const line = lines[i];
-    for (const lbl of labelers){
-      if (lbl.re.test(line)){
-        const val = lbl.get(i);
-        if (/median\s+(sold\s+)?price/i.test(line))        out.medianPrice    = isNum(val) ? val : out.medianPrice;
-        else if (/(closed\s+sales|sold\s+listings|closed\s+listings)/i.test(line))
-                                                          out.closed         = isNum(val) ? val : out.closed;
-        else if (/(median\s+days\s+(in\s+rpr|on\s+market)|days\s+on\s+market)/i.test(line))
-                                                          out.dom            = isNum(val) ? val : out.dom;
-        else if (/(months\s+of\s+inventory|months\s+(of\s+)?supply)/i.test(line))
-                                                          out.monthsSupply   = isNum(val) ? val : out.monthsSupply;
-        else if (/(active\s+listings|active\s+inventory|inventory\s+of\s+homes\s+for\s+sale|active\s+residential\s+listings|active\s+listings.*month\s+end)/i.test(line))
-                                                          out.activeListings = isNum(val) ? val : out.activeListings;
-      }
+
+    // Median price
+    if (/(^|\s)median\s+(sold\s+)?price(\s|$)/i.test(line)) {
+      const raw = firstInt(line) ?? pickNumberAround(i+1, false, 2);
+      if (isNum(raw)) out.medianPrice = raw;
+      continue;
+    }
+    // Closed sales (aka sold listings)
+    if (/(^|\s)(closed\s+sales|sold\s+listings|closed\s+listings)(\s|$)/i.test(line)) {
+      const raw = firstInt(line) ?? pickNumberAround(i+1, false, 3);
+      if (isNum(raw)) out.closed = raw;
+      continue;
+    }
+    // Days on market (aka Median Days in RPR)
+    if (/(^|\s)(median\s+days\s+(in\s+rpr|on\s+market)|days\s+on\s+market)(\s|$)/i.test(line)) {
+      const raw = firstInt(line) ?? pickNumberAround(i+1, false, 2);
+      if (isNum(raw)) out.dom = raw;
+      continue;
+    }
+    // Months supply / inventory
+    if (/(^|\s)(months\s+of\s+inventory|months\s+(of\s+)?supply)(\s|$)/i.test(line)) {
+      const raw = firstFloat(line) ?? pickNumberAround(i+1, true, 2);
+      if (isNum(raw)) out.monthsSupply = round1(raw);
+      continue;
+    }
+    // Active listings (aka active inventory)
+    if (/(^|\s)(active\s+listings|active\s+inventory|inventory\s+of\s+homes\s+for\s+sale|active\s+residential\s+listings|active\s+listings.*month\s+end)(\s|$)/i.test(line)) {
+      const raw = firstInt(line) ?? pickNumberAround(i+1, false, 3);
+      if (isNum(raw)) out.activeListings = raw;
+      continue;
     }
   }
 
@@ -214,3 +202,4 @@ function parseRprStats(txt){
 }
 
 function isNum(n){ return typeof n === "number" && Number.isFinite(n); }
+function round1(n){ return Math.round(n*10)/10; }
