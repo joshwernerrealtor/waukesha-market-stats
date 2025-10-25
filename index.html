@@ -315,13 +315,15 @@
       }
 
       async function getRates() {
+        list.setAttribute('aria-busy', 'true');
+        updatedEl.hidden = false;
+        updatedEl.textContent = 'Loading latest rates…';
         try {
           const res = await fetch('/api/rates?bust=' + Date.now(), { headers: { 'accept': 'application/json' }, cache: 'no-store' });
           if (!res.ok) throw new Error('Failed to load rates');
           const payload = await res.json();
           const items = Array.isArray(payload?.lenders) ? payload.lenders : [];
 
-          list.setAttribute('aria-busy', 'false');
           list.innerHTML = items.length ? items.map(rowHTML).join('') :
             `<div class="rate-row"><div class="left"><h4>Rates unavailable</h4><small>Please try again shortly.</small></div><div class="nums"><div class="num">—</div></div></div>`;
 
@@ -329,11 +331,13 @@
           updatedEl.hidden = !payload.generatedAt;
           if (!updatedEl.hidden) updatedEl.textContent = `Refreshed ${new Date(payload.generatedAt).toLocaleString()}`;
         } catch (err) {
-          list.setAttribute('aria-busy', 'false');
           list.innerHTML = `<div class="rate-row"><div class="left"><h4>Rates unavailable</h4><small>Please try again shortly.</small></div><div class="nums"><div class="num">—</div></div></div>`;
           countEl.textContent = '0 lenders';
-          updatedEl.hidden = true;
+          updatedEl.hidden = false;
+          updatedEl.textContent = 'Unable to refresh rates. Please try again soon.';
           // Don’t throw; Googlebot hates drama.
+          } finally {
+          list.setAttribute('aria-busy', 'false');
         }
       }
 
