@@ -3,29 +3,34 @@
 // Always returns all three lenders by merging live parses with sane fallbacks.
 // Optional env overrides: AB_RATE, AB_APR, UWCU_RATE, UWCU_APR, SUMMIT_RATE, SUMMIT_APR
 // Debug: /api/rates?debug=ab | uwcu | summit | all
+// Force fresh: /api/rates?force=1
 
 const CACHE_TTL_MS = 10 * 60 * 1000;
-const TIMEOUT_MS   = 7000;
+const TIMEOUT_MS   = 8000;               // was 7000
 const MAX_LENDERS  = 3;
 
 let CACHE = { ts: 0, data: null };
 
 export default async function handler(req, res) {
-  res.setHeader("Cache-Control", "s-maxage=900, stale-while-revalidate=3600");
+  const url    = new URL(req.url, "http://localhost");
+  const debug  = url.searchParams.get("debug");
+  const force  = url.searchParams.get("force") === "1";  // NEW: allow hard refresh
+  const now    = Date.now();
 
-  const url = new URL(req.url, "http://localhost");
-  const debug = url.searchParams.get("debug");
-  const now = Date.now();
+  // Edge cache: 5 minutes, allow stale revalidate for 30 minutes.
+  // If you append ?force=1 we also set no-store to avoid edge reusing stale.
+  res.setHeader("Cache-Control", force ? "no-store" : "s-maxage=300, stale-while-revalidate=1800");
 
-  if (!debug && CACHE.data && now - CACHE.ts < CACHE_TTL_MS) {
+  // In-memory cache gate (skip if debug or force)
+  if (!debug && !force && CACHE.data && now - CACHE.ts < CACHE_TTL_MS) {
     return res.status(200).json(CACHE.data);
   }
 
   try {
     const [ab, uw, sc] = await Promise.all([
       withTimeout(fetchAssociatedBank({ debug: debug === "ab" || debug === "all" }), TIMEOUT_MS).catch(() => null),
-      withTimeout(fetchUWCU({ debug: debug === "uwcu" || debug === "all" }), TIMEOUT_MS).catch(() => null),
-      withTimeout(fetchSummitJSON({ debug: debug === "summit" || debug === "all" }), TIMEOUT_MS).catch(() => null),
+      withTimeout(fetchUWCU({         debug: debug === "uwcu" || debug === "all" }), TIMEOUT_MS).catch(() => null),
+      withTimeout(fetchSummitJSON({   debug: debug === "summit" || debug === "all" }), TIMEOUT_MS).catch(() => null),
     ]);
 
     // Debug taps
@@ -43,8 +48,8 @@ export default async function handler(req, res) {
     // Always return all three lenders by merging with fallbacks
     const FALLBACKS = Object.fromEntries(fallbackSample().map(f => [f.name, f]));
     const merged = {
-      "Associated Bank":   ab ?? FALLBACKS["Associated Bank"],
-      "UW Credit Union":   uw ?? FALLBACKS["UW Credit Union"],
+      "Associated Bank":     ab ?? FALLBACKS["Associated Bank"],
+      "UW Credit Union":     uw ?? FALLBACKS["UW Credit Union"],
       "Summit Credit Union": sc ?? FALLBACKS["Summit Credit Union"],
     };
 
@@ -59,7 +64,9 @@ export default async function handler(req, res) {
       lenders
     };
 
-    CACHE = { ts: now, data: payload };
+    // Update memory cache unless force (force returns fresh but doesn’t poison cache)
+    if (!force) CACHE = { ts: now, data: payload };
+
     res.status(200).json(payload);
   } catch (err) {
     // Worst case: always return three from fallback
@@ -89,8 +96,11 @@ async function fetchAssociatedBank({ debug = false } = {}) {
   const html = await fetchText(url);
   const block = extractThirtyYearBlock(html);
 
+  // Try labelled captures first
   const interest = findPercent(block, /(Interest\s*Rate|Rate)\s*:?\s*([0-9]{1,2}\.[0-9]{1,3})\s*%/i);
   const apr      = findPercent(block, /\bAPR\b\s*:?\s*([0-9]{1,2}\.[0-9]{1,3})\s*%/i);
+
+  // Then “two percents near each other” as a resilient fallback
   const duo      = (interest == null || apr == null) ? twoPercentsNearby(block) : null;
 
   const final = normalizeRateApr(pick(interest, duo?.base), pick(apr, duo?.apr));
@@ -163,7 +173,7 @@ async function fetchSummitJSON({ debug = false } = {}) {
           "referer": "https://www.summitcreditunion.com/",
           "user-agent": "Mozilla/5.0 ratesbot"
         },
-        cache: "no-store"
+        cache: "no-store" // make sure we don't get a stale CDN blob
       });
       usedUrl = candidate;
       break;
@@ -300,16 +310,18 @@ function trim(n) { return parseFloat(Number(n).toFixed(3)); }
 function pick(...v) { return v.find(x => x != null && Number.isFinite(+x)); }
 function inRange(n) { return Number.isFinite(n) && n > 1 && n < 20; }
 
+// IMPORTANT: add no-store to avoid stale upstream content
 async function fetchText(url, opts = {}) {
-  const res = await fetch(url, { headers: { "user-agent": "Mozilla/5.0 ratesbot" }, ...opts });
+  const res = await fetch(url, { cache: 'no-store', headers: { "user-agent": "Mozilla/5.0 ratesbot" }, ...opts });
   if (!res.ok) throw new Error(`Bad response ${res.status} for ${url}`);
   return res.text();
 }
 async function fetchJSON(url, opts = {}) {
-  const res = await fetch(url, opts);
+  const res = await fetch(url, { cache: 'no-store', headers: { "accept":"application/json", "user-agent":"Mozilla/5.0 ratesbot" }, ...opts });
   if (!res.ok) throw new Error(`Bad JSON ${res.status} for ${url}`);
   return res.json();
 }
+
 function extractThirtyYearBlock(html) {
   const clean = html.replace(/\s+/g, " ");
   const m = clean.match(/30\s*(?:year|yr)\s*(?:fixed)?[^]{0,1800}/i);
