@@ -785,12 +785,11 @@
   document.addEventListener("DOMContentLoaded", boot);
 })();
 </script>
-  <script>
-/* ===== Waukesha Market Stats (no Rates block) =====
-   This script:
-   1) Fetches /api/waukesha for SF/Condo numbers and renders KPIs
-   2) Fetches /api/updated-at for the “Updated” badge + SEO meta + JSON-LD dates
-   It’s defensive: if elements are missing, it won’t crash.
+<script>
+/* ===== Waukesha Market Stats (communities restored) =====
+   - Renders SF/Condo KPIs from /api/waukesha
+   - Sets “Updated” badge from /api/updated-at (RPR Last-Modified)
+   - Renders the Communities grid + search
 */
 
 (function () {
@@ -808,6 +807,57 @@
   const condoReport = $("#condoReport");
   const printUpdated= $("#printUpdated");
   const printBtn    = $("#printBtn");
+
+  // Communities UI
+  const searchInput = $("#searchInput");
+  const communityGrid = $("#communityGrid");
+
+  // ---------- Community definitions ----------
+  const COMMUNITIES = [
+    { name: "Brookfield",        url: "https://www.narrpr.com/reports-v2/97a381b7-10f7-40e6-9e36-852d9a194cdf/pdf" },
+    { name: "Menomonee Falls",   url: "https://www.narrpr.com/reports-v2/e88b179b-2c39-4b51-9968-f4d8b6df89cb/pdf" },
+    { name: "New Berlin",        url: "https://www.narrpr.com/reports-v2/0eedbe20-e01d-4e10-8791-79e0e18f6853/pdf" },
+    { name: "Muskego",           url: "https://www.narrpr.com/reports-v2/adda4cc2-f31f-4549-a499-793c061484b8/pdf" },
+    { name: "Pewaukee",          url: "https://www.narrpr.com/reports-v2/d62c13ba-f21d-44d4-b4f1-cb89d62cfd1d/pdf" },
+    { name: "Oconomowoc",        url: "https://www.narrpr.com/reports-v2/2635ef10-f399-4498-987f-34784fca249a/pdf" },
+    { name: "Hartland",          url: "https://www.narrpr.com/reports-v2/579c97c4-b4d9-4eb4-980e-890348286b9b/pdf" },
+    { name: "Delafield",         url: "https://www.narrpr.com/reports-v2/cfaf9afb-4e22-44b9-b114-0d64b1be0639/pdf" },
+    { name: "Mukwonago",         url: "https://www.narrpr.com/reports-v2/17d2ea0c-a2d7-4dce-954c-e2140ac59f88/pdf" },
+    { name: "Sussex",            url: "https://www.narrpr.com/reports-v2/41f387a4-b092-42c4-b23a-b3575ae52116/pdf" }
+  ];
+
+  function renderCommunities(list) {
+    if (!communityGrid) return;
+    communityGrid.innerHTML = "";
+    if (!Array.isArray(list) || !list.length) {
+      const p = document.createElement("p");
+      p.className = "muted";
+      p.textContent = "No matching communities.";
+      communityGrid.appendChild(p);
+      return;
+    }
+    list.forEach(c => {
+      const a = document.createElement("a");
+      a.className = "community-card";
+      a.href = c.url;
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.setAttribute("aria-label", c.name + " market report PDF");
+      a.innerHTML = `<span>${c.name}</span><span style="color:#9ca3af">PDF →</span>`;
+      communityGrid.appendChild(a);
+    });
+  }
+
+  function wireCommunitySearch() {
+    if (!searchInput) return;
+    renderCommunities(COMMUNITIES);
+    searchInput.addEventListener("input", () => {
+      const q = searchInput.value.trim().toLowerCase();
+      if (!q) return renderCommunities(COMMUNITIES);
+      const filtered = COMMUNITIES.filter(c => c.name.toLowerCase().includes(q));
+      renderCommunities(filtered);
+    });
+  }
 
   // ---------- Formatters ----------
   const fCurrency = v => new Intl.NumberFormat("en-US", { style:"currency", currency:"USD", maximumFractionDigits:0 }).format(v);
@@ -876,7 +926,6 @@
     if (sfReport && cur?.sfReport)       sfReport.href = cur.sfReport;
     if (condoReport && cur?.condoReport) condoReport.href = cur.condoReport;
 
-    // Print header helper (uses payload.updatedAt if present)
     if (printUpdated && payload?.updatedAt) {
       try { printUpdated.textContent = "Updated " + new Date(payload.updatedAt).toLocaleDateString(); } catch {}
     }
@@ -965,15 +1014,14 @@
 
   async function boot() {
     wirePrint();
+    wireCommunitySearch();
 
-    // Fetch both in parallel so we don’t block UI
     try {
       const [payload, upd] = await Promise.allSettled([loadWaukesha(), loadUpdatedAt()]);
 
       if (payload.status === "fulfilled" && payload.value) {
         buildMonthDropdown(payload.value);
       } else {
-        // Render a friendly error in both panels, don’t crash
         const err = `<div class="kpi"><div class="label">Status</div><div class="value" style="font-size:16px">Couldn’t load live stats</div><div class="delta" style="color:#b91c1c">${payload.reason ? String(payload.reason) : "Unknown error"}</div></div>`;
         if (sfKpis)    sfKpis.innerHTML = err;
         if (condoKpis) condoKpis.innerHTML = err;
@@ -983,7 +1031,6 @@
         applyUpdatedAt(upd.value);
       }
     } catch (e) {
-      // Nuclear fallback: nothing to do, but don’t kill the page
       console.error(e);
     }
   }
