@@ -626,11 +626,112 @@
     });
   }
 
+  <script>
   function render(payload){
-    if (updatedAtEl && payload.updatedAt) {
-      updatedAtEl.textContent = new Date(payload.updatedAt + "T12:00:00Z").toLocaleDateString();
+    // 1) Updated badge comes from /api/updated-at (RPR’s Last-Modified)
+    (async () => {
+      try {
+        const r = await fetch("/api/updated-at?ts=" + Date.now(), { cache: "no-store" });
+        const j = await r.json();
+        const d = j?.updatedAt;
+        const el = document.getElementById("updatedAt");
+        if (el && d) el.textContent = new Date(d + "T12:00:00Z").toLocaleDateString();
+        // Keep meta tags in sync for SEO
+        const metaLast = document.getElementById("meta-lastmod");
+        const ogUpd = document.getElementById("og-updated");
+        if (metaLast) metaLast.setAttribute("content", d);
+        if (ogUpd) ogUpd.setAttribute("content", d + "T12:00:00Z");
+        // Also update JSON-LD blocks if present
+        const ds = document.getElementById("ld-dataset");
+        if (ds) {
+          const data = JSON.parse(ds.textContent || "{}");
+          data.dateModified = d;
+          ds.textContent = JSON.stringify(data);
+        }
+        const wp = document.getElementById("ld-webpage");
+        if (wp) {
+          const w = JSON.parse(wp.textContent || "{}");
+          w.dateModified = d;
+          wp.textContent = JSON.stringify(w);
+        }
+      } catch {
+        // Silent fail. Badge will just stay as-is.
+      }
+    })();
+
+    // 2) Month dropdown and KPI panels still use /api/waukesha data
+    const updatedAtEl = document.getElementById("updatedAt");
+    const monthSelect  = document.getElementById("monthSelect");
+    const sfMonthEl    = document.getElementById("sfMonth");
+    const condoMonthEl = document.getElementById("condoMonth");
+    const sfKpis       = document.getElementById("sfKpis");
+    const condoKpis    = document.getElementById("condoKpis");
+    const sfReport     = document.getElementById("sfReport");
+    const condoReport  = document.getElementById("condoReport");
+
+    const fCurrency=v=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0}).format(v);
+    const fNumber=v=>new Intl.NumberFormat("en-US").format(v);
+    const fNumber1=v=>new Intl.NumberFormat("en-US",{maximumFractionDigits:1}).format(v);
+
+    function kpiEl(label, value, prev, type){
+      const el = document.createElement("div");
+      el.className = "kpi";
+      const hasValue = typeof value === "number" && !Number.isNaN(value);
+      const hasPrev  = typeof prev  === "number" && !Number.isNaN(prev);
+
+      let formatted = "—";
+      if (hasValue) {
+        formatted = type === "currency" ? fCurrency(value)
+                  : type === "number1" ? fNumber1(value)
+                  : fNumber(value);
+      }
+
+      let deltaBlock = "";
+      if (hasValue && hasPrev) {
+        const diff = value - prev;
+        const dir  = diff === 0 ? 0 : (diff > 0 ? 1 : -1);
+        const pct  = prev === 0 ? 0 : (diff / prev) * 100;
+        const arrow = dir === 0 ? "—" : (dir > 0 ? "▲" : "▼");
+        const cls   = dir === 0 ? "" : (dir > 0 ? "up" : "down");
+        deltaBlock = `<div class="delta ${cls}">${arrow} ${Math.abs(pct).toFixed(1)}% MoM</div>`;
+      }
+
+      el.innerHTML = `
+        <div class="label">${label}</div>
+        <div class="value">${formatted}</div>
+        ${deltaBlock}
+      `;
+      return el;
     }
 
+    function paintMonth(key, dataObj){
+      const months=Object.keys(dataObj.months).sort();
+      const idx=months.indexOf(key); const cur=dataObj.months[key]; const prev=dataObj.months[months[idx-1]];
+      const [y,m]=key.split("-"); const label=new Date(+y, +m-1, 1).toLocaleDateString(undefined,{month:"long",year:"numeric"});
+      if (sfMonthEl) sfMonthEl.textContent=label;
+      if (condoMonthEl) condoMonthEl.textContent=label;
+      if (sfKpis) sfKpis.innerHTML="";
+      if (condoKpis) condoKpis.innerHTML="";
+
+      const METRICS = [
+        { key:"medianPrice",   label:"Median Price",   type:"currency" },
+        { key:"closed",        label:"Closed Sales",   type:"number"   },
+        { key:"dom",           label:"Days on Market", type:"number"   },
+        { key:"monthsSupply",  label:"Months Supply",  type:"number1"  },
+        { key:"activeListings",label:"Active Listings",type:"number"   }
+      ];
+
+      METRICS.forEach(m=>{
+        if (sfKpis) sfKpis.appendChild(kpiEl(m.label, cur.sf?.[m.key],    prev?.sf?.[m.key],    m.type));
+        if (condoKpis) condoKpis.appendChild(kpiEl(m.label, cur.condo?.[m.key], prev?.condo?.[m.key], m.type));
+      });
+
+      // Update report links to the latest month’s PDFs when present
+      if (sfReport && cur?.sfReport) sfReport.href = cur.sfReport;
+      if (condoReport && cur?.condoReport) condoReport.href = cur.condoReport;
+    }
+
+    // Build the month dropdown and paint the newest month
     const months=Object.keys(payload.months).sort().reverse();
     if (monthSelect) {
       monthSelect.innerHTML="";
@@ -647,31 +748,13 @@
 
     paintMonth(months[0], payload);
 
-    if (sfReport && payload.months[months[0]]?.sfReport) sfReport.href = payload.months[months[0]].sfReport;
-    if (condoReport && payload.months[months[0]]?.condoReport) condoReport.href = payload.months[months[0]].condoReport;
-
-    renderCommunities(COMMUNITIES);
-
     // Print header date
     const pu = document.getElementById("printUpdated");
     if (pu && payload?.updatedAt) pu.textContent = "Updated " + new Date(payload.updatedAt).toLocaleDateString();
 
-    // Print button: iframe-safe
-    const btn = document.getElementById("printBtn");
-    if (btn) {
-      btn.onclick = () => {
-        const params = new URLSearchParams(location.search);
-        const isEmbedded = (window.top !== window.self);
-        if (isEmbedded) {
-          const url = new URL(location.href);
-          url.searchParams.set('print','1');
-          url.searchParams.delete('embed');
-          window.open(url.toString(), '_blank', 'noopener');
-        } else {
-          window.print();
-        }
-      };
-    }
+    // Print button behavior is unchanged; handled elsewhere in the file
+  }
+</script>
 
     // Auto-print if opened with ?print=1
     const params = new URLSearchParams(location.search);
