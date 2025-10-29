@@ -791,12 +791,10 @@
    - Sets “Updated” badge from /api/updated-at (RPR Last-Modified)
    - Renders the Communities grid + search
 */
-
 (function () {
-  // ---------- DOM helpers ----------
   const $ = (q, el = document) => el.querySelector(q);
 
-  // Elements (guarded)
+  // Core elements
   const updatedAtEl = $("#updatedAt");
   const monthSelect = $("#monthSelect");
   const sfMonthEl   = $("#sfMonth");
@@ -812,7 +810,6 @@
   const searchInput = $("#searchInput");
   const communityGrid = $("#communityGrid");
 
-  // ---------- Community definitions ----------
   const COMMUNITIES = [
     { name: "Brookfield",        url: "https://www.narrpr.com/reports-v2/97a381b7-10f7-40e6-9e36-852d9a194cdf/pdf" },
     { name: "Menomonee Falls",   url: "https://www.narrpr.com/reports-v2/e88b179b-2c39-4b51-9968-f4d8b6df89cb/pdf" },
@@ -836,7 +833,7 @@
       communityGrid.appendChild(p);
       return;
     }
-    list.forEach(c => {
+    for (const c of list) {
       const a = document.createElement("a");
       a.className = "community-card";
       a.href = c.url;
@@ -845,7 +842,7 @@
       a.setAttribute("aria-label", c.name + " market report PDF");
       a.innerHTML = `<span>${c.name}</span><span style="color:#9ca3af">PDF →</span>`;
       communityGrid.appendChild(a);
-    });
+    }
   }
 
   function wireCommunitySearch() {
@@ -867,41 +864,36 @@
   function kpiEl(label, value, prev, type) {
     const el = document.createElement("div");
     el.className = "kpi";
-    const hasValue = typeof value === "number" && !Number.isNaN(value);
-    const hasPrev  = typeof prev  === "number" && !Number.isNaN(prev);
+    const ok = typeof value === "number" && !Number.isNaN(value);
+    const havePrev = typeof prev === "number" && !Number.isNaN(prev);
 
-    let formatted = "—";
-    if (hasValue) {
-      formatted = type === "currency" ? fCurrency(value)
-                : type === "number1"  ? fNumber1(value)
-                : fNumber(value);
+    let txt = "—";
+    if (ok) {
+      txt = type === "currency" ? fCurrency(value)
+          : type === "number1"  ? fNumber1(value)
+          : fNumber(value);
     }
 
-    let deltaBlock = "";
-    if (hasValue && hasPrev) {
+    let delta = "";
+    if (ok && havePrev) {
       const diff = value - prev;
-      const dir  = diff === 0 ? 0 : (diff > 0 ? 1 : -1);
-      const pct  = prev === 0 ? 0 : (diff / prev) * 100;
+      const dir = diff === 0 ? 0 : (diff > 0 ? 1 : -1);
+      const pct = prev === 0 ? 0 : (diff / prev) * 100;
       const arrow = dir === 0 ? "—" : (dir > 0 ? "▲" : "▼");
-      const cls   = dir === 0 ? "" : (dir > 0 ? "up" : "down");
-      deltaBlock = `<div class="delta ${cls}">${arrow} ${Math.abs(pct).toFixed(1)}% MoM</div>`;
+      const cls = dir === 0 ? "" : (dir > 0 ? "up" : "down");
+      delta = `<div class="delta ${cls}">${arrow} ${Math.abs(pct).toFixed(1)}% MoM</div>`;
     }
 
-    el.innerHTML = `
-      <div class="label">${label}</div>
-      <div class="value">${formatted}</div>
-      ${deltaBlock}
-    `;
+    el.innerHTML = `<div class="label">${label}</div><div class="value">${txt}</div>${delta}`;
     return el;
   }
 
   function paintMonth(key, payload) {
-    if (!payload || !payload.months) return;
-
+    if (!payload?.months) return;
     const months = Object.keys(payload.months).sort();
-    const idx = months.indexOf(key);
+    const i = months.indexOf(key);
     const cur = payload.months[key];
-    const prev = payload.months[months[idx - 1]];
+    const prev = payload.months[months[i - 1]];
     const [y, m] = key.split("-");
     const label = new Date(+y, +m - 1, 1).toLocaleDateString(undefined, { month:"long", year:"numeric" });
 
@@ -918,10 +910,10 @@
       { key:"activeListings", label:"Active Listings", type:"number"   }
     ];
 
-    METRICS.forEach(m => {
-      if (sfKpis)    sfKpis.appendChild(kpiEl(m.label, cur.sf?.[m.key],    prev?.sf?.[m.key],    m.type));
-      if (condoKpis) condoKpis.appendChild(kpiEl(m.label, cur.condo?.[m.key], prev?.condo?.[m.key], m.type));
-    });
+    for (const mdef of METRICS) {
+      if (sfKpis)    sfKpis.appendChild(kpiEl(mdef.label, cur.sf?.[mdef.key],    prev?.sf?.[mdef.key],    mdef.type));
+      if (condoKpis) condoKpis.appendChild(kpiEl(mdef.label, cur.condo?.[mdef.key], prev?.condo?.[mdef.key], mdef.type));
+    }
 
     if (sfReport && cur?.sfReport)       sfReport.href = cur.sfReport;
     if (condoReport && cur?.condoReport) condoReport.href = cur.condoReport;
@@ -935,14 +927,14 @@
     if (!monthSelect || !payload?.months) return;
     const months = Object.keys(payload.months).sort().reverse();
     monthSelect.innerHTML = "";
-    months.forEach(k => {
+    for (const k of months) {
       const [y, m] = k.split("-");
       const dt = new Date(+y, +m - 1, 1);
       const opt = document.createElement("option");
       opt.value = k;
       opt.textContent = dt.toLocaleDateString(undefined, { month:"long", year:"numeric" });
       monthSelect.appendChild(opt);
-    });
+    }
     monthSelect.value = months[0];
     monthSelect.onchange = e => paintMonth(e.target.value, payload);
     paintMonth(months[0], payload);
@@ -963,33 +955,19 @@
   function applyUpdatedAt(updated) {
     const d = updated?.updatedAt;
     if (!d) return;
-
-    // Badge text
     if (updatedAtEl) {
       try { updatedAtEl.textContent = new Date(d + "T12:00:00Z").toLocaleDateString(); } catch {}
     }
-
-    // Meta + JSON-LD
-    const metaLast = $("#meta-lastmod");
-    if (metaLast) metaLast.setAttribute("content", d);
-    const ogUpd = $("#og-updated");
-    if (ogUpd) ogUpd.setAttribute("content", d + "T12:00:00Z");
+    $("#meta-lastmod")?.setAttribute("content", d);
+    $("#og-updated")?.setAttribute("content", d + "T12:00:00Z");
 
     const ds = $("#ld-dataset");
     if (ds) {
-      try {
-        const data = JSON.parse(ds.textContent || "{}");
-        data.dateModified = d;
-        ds.textContent = JSON.stringify(data);
-      } catch {}
+      try { const data = JSON.parse(ds.textContent || "{}"); data.dateModified = d; ds.textContent = JSON.stringify(data); } catch {}
     }
     const wp = $("#ld-webpage");
     if (wp) {
-      try {
-        const w = JSON.parse(wp.textContent || "{}");
-        w.dateModified = d;
-        wp.textContent = JSON.stringify(w);
-      } catch {}
+      try { const w = JSON.parse(wp.textContent || "{}"); w.dateModified = d; wp.textContent = JSON.stringify(w); } catch {}
     }
   }
 
@@ -1007,18 +985,19 @@
       }
     };
     const params = new URLSearchParams(location.search);
-    if (params.get("print") === "1") {
-      setTimeout(() => window.print(), 300);
-    }
+    if (params.get("print") === "1") setTimeout(() => window.print(), 300);
   }
 
   async function boot() {
+    // Optional embed mode chrome hide
+    const params = new URLSearchParams(location.search);
+    if (params.get("embed") === "1") document.body.classList.add("embed");
+
     wirePrint();
     wireCommunitySearch();
 
     try {
       const [payload, upd] = await Promise.allSettled([loadWaukesha(), loadUpdatedAt()]);
-
       if (payload.status === "fulfilled" && payload.value) {
         buildMonthDropdown(payload.value);
       } else {
@@ -1026,7 +1005,6 @@
         if (sfKpis)    sfKpis.innerHTML = err;
         if (condoKpis) condoKpis.innerHTML = err;
       }
-
       if (upd.status === "fulfilled" && upd.value) {
         applyUpdatedAt(upd.value);
       }
