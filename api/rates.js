@@ -5,6 +5,21 @@
 // Debug: /api/rates?debug=all|ab|uwcu|summit   Force fresh: ?force=1
 
 const TIMEOUT_MS = 8000;
+function getWhitelist(req) {
+  try {
+    const u = new URL(req.url, "http://localhost");
+    const qp = (u.searchParams.get("allow") || "").trim();
+    if (qp) return qp.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
+
+    const env = (process.env.LENDER_WHITELIST || "").trim();
+    if (env) return env.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
+
+    // Safe default so you never get [] again
+    return ["summit", "uwcu"];
+  } catch {
+    return ["summit", "uwcu"];
+  }
+}
 
 export default async function handler(req, res) {
   const url   = new URL(req.url, "http://localhost");
