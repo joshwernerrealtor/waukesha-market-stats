@@ -785,5 +785,211 @@
   document.addEventListener("DOMContentLoaded", boot);
 })();
 </script>
+  <script>
+/* ===== Waukesha Market Stats (no Rates block) =====
+   This script:
+   1) Fetches /api/waukesha for SF/Condo numbers and renders KPIs
+   2) Fetches /api/updated-at for the “Updated” badge + SEO meta + JSON-LD dates
+   It’s defensive: if elements are missing, it won’t crash.
+*/
+
+(function () {
+  // ---------- DOM helpers ----------
+  const $ = (q, el = document) => el.querySelector(q);
+
+  // Elements (guarded)
+  const updatedAtEl = $("#updatedAt");
+  const monthSelect = $("#monthSelect");
+  const sfMonthEl   = $("#sfMonth");
+  const condoMonthEl= $("#condoMonth");
+  const sfKpis      = $("#sfKpis");
+  const condoKpis   = $("#condoKpis");
+  const sfReport    = $("#sfReport");
+  const condoReport = $("#condoReport");
+  const printUpdated= $("#printUpdated");
+  const printBtn    = $("#printBtn");
+
+  // ---------- Formatters ----------
+  const fCurrency = v => new Intl.NumberFormat("en-US", { style:"currency", currency:"USD", maximumFractionDigits:0 }).format(v);
+  const fNumber   = v => new Intl.NumberFormat("en-US").format(v);
+  const fNumber1  = v => new Intl.NumberFormat("en-US", { maximumFractionDigits:1 }).format(v);
+
+  function kpiEl(label, value, prev, type) {
+    const el = document.createElement("div");
+    el.className = "kpi";
+    const hasValue = typeof value === "number" && !Number.isNaN(value);
+    const hasPrev  = typeof prev  === "number" && !Number.isNaN(prev);
+
+    let formatted = "—";
+    if (hasValue) {
+      formatted = type === "currency" ? fCurrency(value)
+                : type === "number1"  ? fNumber1(value)
+                : fNumber(value);
+    }
+
+    let deltaBlock = "";
+    if (hasValue && hasPrev) {
+      const diff = value - prev;
+      const dir  = diff === 0 ? 0 : (diff > 0 ? 1 : -1);
+      const pct  = prev === 0 ? 0 : (diff / prev) * 100;
+      const arrow = dir === 0 ? "—" : (dir > 0 ? "▲" : "▼");
+      const cls   = dir === 0 ? "" : (dir > 0 ? "up" : "down");
+      deltaBlock = `<div class="delta ${cls}">${arrow} ${Math.abs(pct).toFixed(1)}% MoM</div>`;
+    }
+
+    el.innerHTML = `
+      <div class="label">${label}</div>
+      <div class="value">${formatted}</div>
+      ${deltaBlock}
+    `;
+    return el;
+  }
+
+  function paintMonth(key, payload) {
+    if (!payload || !payload.months) return;
+
+    const months = Object.keys(payload.months).sort();
+    const idx = months.indexOf(key);
+    const cur = payload.months[key];
+    const prev = payload.months[months[idx - 1]];
+    const [y, m] = key.split("-");
+    const label = new Date(+y, +m - 1, 1).toLocaleDateString(undefined, { month:"long", year:"numeric" });
+
+    if (sfMonthEl)   sfMonthEl.textContent = label;
+    if (condoMonthEl) condoMonthEl.textContent = label;
+    if (sfKpis)      sfKpis.innerHTML = "";
+    if (condoKpis)   condoKpis.innerHTML = "";
+
+    const METRICS = [
+      { key:"medianPrice",    label:"Median Price",    type:"currency" },
+      { key:"closed",         label:"Closed Sales",    type:"number"   },
+      { key:"dom",            label:"Days on Market",  type:"number"   },
+      { key:"monthsSupply",   label:"Months Supply",   type:"number1"  },
+      { key:"activeListings", label:"Active Listings", type:"number"   }
+    ];
+
+    METRICS.forEach(m => {
+      if (sfKpis)    sfKpis.appendChild(kpiEl(m.label, cur.sf?.[m.key],    prev?.sf?.[m.key],    m.type));
+      if (condoKpis) condoKpis.appendChild(kpiEl(m.label, cur.condo?.[m.key], prev?.condo?.[m.key], m.type));
+    });
+
+    if (sfReport && cur?.sfReport)       sfReport.href = cur.sfReport;
+    if (condoReport && cur?.condoReport) condoReport.href = cur.condoReport;
+
+    // Print header helper (uses payload.updatedAt if present)
+    if (printUpdated && payload?.updatedAt) {
+      try { printUpdated.textContent = "Updated " + new Date(payload.updatedAt).toLocaleDateString(); } catch {}
+    }
+  }
+
+  function buildMonthDropdown(payload) {
+    if (!monthSelect || !payload?.months) return;
+    const months = Object.keys(payload.months).sort().reverse();
+    monthSelect.innerHTML = "";
+    months.forEach(k => {
+      const [y, m] = k.split("-");
+      const dt = new Date(+y, +m - 1, 1);
+      const opt = document.createElement("option");
+      opt.value = k;
+      opt.textContent = dt.toLocaleDateString(undefined, { month:"long", year:"numeric" });
+      monthSelect.appendChild(opt);
+    });
+    monthSelect.value = months[0];
+    monthSelect.onchange = e => paintMonth(e.target.value, payload);
+    paintMonth(months[0], payload);
+  }
+
+  async function loadWaukesha() {
+    const r = await fetch("/api/waukesha?ts=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) throw new Error("API /api/waukesha failed " + r.status);
+    return r.json();
+  }
+
+  async function loadUpdatedAt() {
+    const r = await fetch("/api/updated-at?ts=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) throw new Error("API /api/updated-at failed " + r.status);
+    return r.json();
+  }
+
+  function applyUpdatedAt(updated) {
+    const d = updated?.updatedAt;
+    if (!d) return;
+
+    // Badge text
+    if (updatedAtEl) {
+      try { updatedAtEl.textContent = new Date(d + "T12:00:00Z").toLocaleDateString(); } catch {}
+    }
+
+    // Meta + JSON-LD
+    const metaLast = $("#meta-lastmod");
+    if (metaLast) metaLast.setAttribute("content", d);
+    const ogUpd = $("#og-updated");
+    if (ogUpd) ogUpd.setAttribute("content", d + "T12:00:00Z");
+
+    const ds = $("#ld-dataset");
+    if (ds) {
+      try {
+        const data = JSON.parse(ds.textContent || "{}");
+        data.dateModified = d;
+        ds.textContent = JSON.stringify(data);
+      } catch {}
+    }
+    const wp = $("#ld-webpage");
+    if (wp) {
+      try {
+        const w = JSON.parse(wp.textContent || "{}");
+        w.dateModified = d;
+        wp.textContent = JSON.stringify(w);
+      } catch {}
+    }
+  }
+
+  function wirePrint() {
+    if (!printBtn) return;
+    const isEmbedded = (window.top !== window.self);
+    printBtn.onclick = () => {
+      if (isEmbedded) {
+        const url = new URL(location.href);
+        url.searchParams.set("print","1");
+        url.searchParams.delete("embed");
+        window.open(url.toString(), "_blank", "noopener");
+      } else {
+        window.print();
+      }
+    };
+    const params = new URLSearchParams(location.search);
+    if (params.get("print") === "1") {
+      setTimeout(() => window.print(), 300);
+    }
+  }
+
+  async function boot() {
+    wirePrint();
+
+    // Fetch both in parallel so we don’t block UI
+    try {
+      const [payload, upd] = await Promise.allSettled([loadWaukesha(), loadUpdatedAt()]);
+
+      if (payload.status === "fulfilled" && payload.value) {
+        buildMonthDropdown(payload.value);
+      } else {
+        // Render a friendly error in both panels, don’t crash
+        const err = `<div class="kpi"><div class="label">Status</div><div class="value" style="font-size:16px">Couldn’t load live stats</div><div class="delta" style="color:#b91c1c">${payload.reason ? String(payload.reason) : "Unknown error"}</div></div>`;
+        if (sfKpis)    sfKpis.innerHTML = err;
+        if (condoKpis) condoKpis.innerHTML = err;
+      }
+
+      if (upd.status === "fulfilled" && upd.value) {
+        applyUpdatedAt(upd.value);
+      }
+    } catch (e) {
+      // Nuclear fallback: nothing to do, but don’t kill the page
+      console.error(e);
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", boot);
+})();
+</script>
 </body>
 </html>
