@@ -4,45 +4,42 @@
   <!-- Meta -->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
   <title>Waukesha County Housing Market Statistics</title>
-  
+
   <!-- SEO / Social (single source of truth) -->
-<link rel="canonical" href="https://joshwerner.myrealtyonegroup.com/latest-waukesha-cnty-market-stats" />
-<meta name="robots" content="index,follow" />
-<meta name="description" content="Live Waukesha County real estate stats updated automatically: median price, closed sales, days on market, and months of supply for single-family and condos." />
+  <link rel="canonical" href="https://joshwerner.myrealtyonegroup.com/latest-waukesha-cnty-market-stats" />
+  <meta name="robots" content="index,follow" />
+  <meta name="description" content="Live Waukesha County real estate stats updated automatically: median price, closed sales, days on market, and months of supply for single-family and condos." />
 
-<meta property="og:site_name" content="Josh Werner — Realty ONE Group Luminous" />
-<meta property="og:locale" content="en_US" />
-<meta property="og:title" content="Waukesha County Housing Market Statistics" />
-<meta property="og:description" content="Live Waukesha County real estate stats updated automatically: median price, closed sales, days on market, and months of supply for single-family and condos." />
-<meta property="og:type" content="website" />
-<meta property="og:url" content="https://joshwerner.myrealtyonegroup.com/latest-waukesha-cnty-market-stats" />
-<meta property="og:image" content="https://waukesha-market-stats.vercel.app/og-image.png" />
-<meta property="og:image:alt" content="Waukesha County Market Statistics — Live, auto-updated" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
+  <meta property="og:site_name" content="Josh Werner — Realty ONE Group Luminous" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:title" content="Waukesha County Housing Market Statistics" />
+  <meta property="og:description" content="Live Waukesha County real estate stats updated automatically: median price, closed sales, days on market, and months of supply for single-family and condos." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://joshwerner.myrealtyonegroup.com/latest-waukesha-cnty-market-stats" />
+  <meta property="og:image" content="https://waukesha-market-stats.vercel.app/og-image.png" />
+  <meta property="og:image:alt" content="Waukesha County Market Statistics — Live, auto-updated" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
 
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Waukesha County Housing Market Statistics" />
-<meta name="twitter:description" content="Live Waukesha County real estate stats updated automatically: median price, closed sales, days on market, and months of supply for single-family and condos." />
-<meta name="twitter:image" content="https://waukesha-market-stats.vercel.app/og-image.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Waukesha County Housing Market Statistics" />
+  <meta name="twitter:description" content="Live Waukesha County real estate stats updated automatically: median price, closed sales, days on market, and months of supply for single-family and condos." />
+  <meta name="twitter:image" content="https://waukesha-market-stats.vercel.app/og-image.png" />
 
-<meta name="theme-color" content="#C5A349" />
-<meta name="google-site-verification" content="_PjSWN6opbxekpcvJNTYO1gk8nnVpJPm6VE6AYSTbDc" />
-<meta name="msvalidate.01" content="51198E56FE8D9E5EE8E0A011FF64E88D" />
+  <meta name="theme-color" content="#C5A349" />
+  <meta name="google-site-verification" content="_PjSWN6opbxekpcvJNTYO1gk8nnVpJPm6VE6AYSTbDc" />
+  <meta name="msvalidate.01" content="51198E56FE8D9E5EE8E0A011FF64E88D" />
 
-  <!-- Screen styles (no print styles here) -->
+  <!-- Screen styles -->
   <style>
     :root {
       --brand:#C5A349; --ink:#1f2937; --muted:#6b7280; --bg:#f7f7f9; --card:#fff;
       --radius:16px; --shadow:0 10px 24px rgba(0,0,0,.08); --shadow-sm:0 3px 10px rgba(0,0,0,.06);
       --maxw:1100px;
     }
-
     html, body { height:100%; }
     body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial; color:var(--ink); background:var(--bg); }
-
     .container { max-width:var(--maxw); margin-inline:auto; padding:24px; }
     .hero { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px 18px; }
     .title { margin:0; font-size:clamp(22px,3vw,34px); font-weight:800; }
@@ -52,26 +49,14 @@
     .select, .button { border:1px solid #e5e7eb; background:#fff; border-radius:12px; padding:10px 12px; font-size:14px; }
     .button { cursor:pointer; }
 
-    /* Sticky subnav (screen only) */
-    .subnav {
-      position:-webkit-sticky; position:sticky;
-      top:0; z-index:1000;
-      display:flex; gap:14px; margin-top:8px; font-size:14px;
-      background:var(--card); padding:10px 0;
-      border-top:1px solid #eee; border-bottom:1px solid #eee;
-      box-shadow:0 2px 10px rgba(0,0,0,.04);
-    }
-    .subnav a { color:var(--muted); }
-    .subnav a:hover { color:var(--ink); }
-
+    .subnav { position:sticky; top:0; z-index:1000; display:flex; gap:14px; margin-top:8px; font-size:14px;
+      background:var(--card); padding:10px 0; border-top:1px solid #eee; border-bottom:1px solid #eee; box-shadow:0 2px 10px rgba(0,0,0,.04); }
+    .subnav a { color:var(--muted); } .subnav a:hover { color:var(--ink); }
     .grid-2 { display:grid; grid-template-columns:1fr; gap:16px; margin-top:16px; }
     @media (min-width:900px) { .grid-2 { grid-template-columns:1fr 1fr; } }
-
     .card { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px 18px; }
-
     .kpis { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px; }
     @media (min-width:720px) { .kpis { grid-template-columns:repeat(3,1fr); } }
-
     .kpi { border:1px solid #eef0f3; border-radius:14px; padding:12px; background:#fff; }
     .kpi .label { font-size:12px; color:var(--muted); text-transform:uppercase; }
     .kpi .value { font-size:clamp(22px,3vw,28px); font-weight:800; margin-top:6px; }
@@ -85,37 +70,22 @@
 
     .search { display:flex; gap:10px; align-items:center; padding:10px 12px; border-radius:12px; background:#fff; border:1px solid #e5e7eb; box-shadow:var(--shadow-sm); }
     .search input { border:none; outline:none; flex:1; font-size:14px; }
-
     a.link { color:var(--ink); text-decoration:none; border-bottom:1px solid #ddd; }
 
     .foot { display:flex; align-items:center; justify-content:space-between; gap:12px; color:var(--muted); font-size:12px; margin-top:14px; }
-
-    /* Smooth anchor scroll + offset for sticky nav */
     html { scroll-behavior:smooth; }
     #sf, #condo, #communities { scroll-margin-top:80px; }
 
-    /* --- Loading skeletons --- */
     .skel { background:#eef0f3; border-radius:10px; height:32px; animation:pulse 1.2s ease-in-out infinite; }
     @keyframes pulse { 0%{opacity:.6} 50%{opacity:1} 100%{opacity:.6} }
     .muted { color:var(--muted); }
 
-    /* --- Embed mode (hide chrome in iframes) --- */
-    .embed header.container,
-    .embed footer.container { display:none; }
+    .embed header.container, .embed footer.container { display:none; }
     .embed .container { padding-top:12px; }
 
-    /* --- Brand accents --- */
-    :root{
-      --brand-50:#f8f3e6;
-      --brand-100:#f1e6c9;
-      --brand-200:#e7d5a1;
-      --brand-600:#a8842d;
-      --brand-700:#8f6f25;
-      --bg:#fbfaf7;
-    }
+    :root{ --brand-50:#f8f3e6; --brand-100:#f1e6c9; --brand-200:#e7d5a1; --brand-600:#a8842d; --brand-700:#8f6f25; --bg:#fbfaf7; }
     body { background:var(--bg); }
 
-    /* CTA */
     .cta { margin-top:16px; background:linear-gradient(180deg,#fff,#fbfaf7); border:1px solid #e9e5d6; border-radius:14px; padding:18px; box-shadow:0 6px 18px rgba(0,0,0,.06); }
     .cta h3 { margin:0 0 6px 0; font-size:18px; }
     .cta p { margin:0 0 12px 0; color:var(--muted); font-size:14px; }
@@ -127,35 +97,21 @@
     .btn-ghost:hover { background:#f8f5ec; }
     @media print { .cta { display:none !important; } }
 
-    /* Buttons */
     .button{ background:var(--brand); color:#fff; border-color:var(--brand-600); box-shadow:var(--shadow-sm); }
     .button:hover{ filter:brightness(0.95); }
-
-    /* Chips */
     .pill{ background:var(--brand-50); border-color:var(--brand-200); }
-
-    /* Month badge */
     .badge{ background:var(--brand-50); border:1px solid var(--brand-200); color:var(--brand-700); padding:4px 8px; border-radius:999px; font-size:12px; }
 
-    /* Hero background accent */
     .hero{
       background:
         radial-gradient(600px 220px at 85% -10%, rgba(197,163,73,.18), transparent 70%),
         radial-gradient(520px 180px at -10% 110%, rgba(197,163,73,.12), transparent 70%),
         var(--card);
     }
-
-    /* Card hover */
     .card{ position:relative; transition:box-shadow .2s ease, transform .2s ease; }
     @media(hover:hover){ .card:hover{ box-shadow:0 12px 26px rgba(0,0,0,.10); transform:translateY(-1px); } }
-    .card::before{
-      content:""; position:absolute; top:0; left:0; right:0; height:3px;
-      border-radius:var(--radius) var(--radius) 0 0;
-      background:linear-gradient(90deg, var(--brand), rgba(197,163,73,0) 65%);
-      pointer-events:none;
-    }
-
-    /* KPI value gradient */
+    .card::before{ content:""; position:absolute; top:0; left:0; right:0; height:3px; border-radius:var(--radius) var(--radius) 0 0;
+      background:linear-gradient(90deg, var(--brand), rgba(197,163,73,0) 65%); pointer-events:none; }
     .kpi .value{ color:var(--ink); font-variant-numeric:tabular-nums; letter-spacing:-.2px; text-shadow:0 1px 0 rgba(255,255,255,.55); }
     @supports (-webkit-background-clip:text){
       .kpi .value{
@@ -163,16 +119,11 @@
         -webkit-background-clip:text; -webkit-text-fill-color:transparent; text-shadow:none;
       }
     }
-
-    /* Section title accent */
     .card h2{ position:relative; padding-bottom:6px; }
-    .card h2::after{
-      content:""; position:absolute; left:0; bottom:0; width:42px; height:3px;
-      background:linear-gradient(90deg, var(--brand), rgba(197,163,73,0)); border-radius:2px; pointer-events:none;
-    }
+    .card h2::after{ content:""; position:absolute; left:0; bottom:0; width:42px; height:3px;
+      background:linear-gradient(90deg, var(--brand), rgba(197,163,73,0)); border-radius:2px; pointer-events:none; }
     @media print{ .card h2::after{ display:none; } }
 
-    /* Focus rings */
     :root{ --focus-outline:#e7d5a1; --focus-ring:rgba(197,163,73,.35); }
     :where(.button, .select, .search input, .community-card, a.link){ outline:none; }
     :where(.button, .select, .search input, .community-card, a.link):focus-visible{
@@ -180,14 +131,12 @@
     }
     @media print{ :where(.button, .select, .search input, .community-card, a.link):focus-visible{ outline:none !important; box-shadow:none !important; } }
 
-    /* Embed layout */
     .embed .container{ padding:16px; }
     @media (min-width:900px){ .embed .container{ padding:20px; } }
     .embed .hero{ padding:12px 14px; }
     .embed .subnav{ margin-top:6px; }
     .embed .foot{ margin-top:10px; }
 
-    /* Community hover */
     .community-card{ transition:box-shadow .15s ease, transform .15s ease, border-color .15s ease, background .15s ease; }
     .community-card span:last-child{ color:#9ca3af !important; transition:transform .15s ease, color .15s ease; }
     @media(hover:hover){
@@ -197,157 +146,100 @@
     .community-card:focus-visible{ outline:2px solid var(--brand-200); outline-offset:2px; }
 
     /* Print styles */
-@page { size: Letter portrait; margin: 0.5in; }
-@media print {
-  html, body { background:#fff !important; color:#111 !important; }
-  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .container { max-width:none !important; padding:0 !important; }
-  header.container, main.container, footer.container { padding:0 !important; }
-  .hero { margin:0 0 0.25in 0 !important; box-shadow:none !important; border:none !important; border-radius:0 !important; }
-  .subnav, .search, #printBtn { display:none !important; }
-  .grid-2 { grid-template-columns:1fr 1fr !important; gap:0.35in !important; }
-  .card { box-shadow:none !important; border:1px solid #e5e7eb !important; border-radius:8px !important; }
-  .kpi { break-inside:avoid; }
-  .foot { color:#6b7280 !important; }
-  .title { font-size:22px !important; }
-  .subtitle { font-size:12px !important; }
-  .kpi .label { font-size:11px !important; }
-  .kpi .value { font-size:20px !important; }
-  a.link { color:#111 !important; border-bottom:1px solid #ddd !important; text-decoration:none !important; }
-  .container > * { margin-left:0.25in; margin-right:0.25in; }
-  .hero, .grid-2, #communities, footer.container { margin-left:0.25in; margin-right:0.25in; }
-  #communities { display:none !important; }
-  #communities, #communities.card { page-break-before:auto !important; break-before:auto !important; }
-}
+    @page { size: Letter portrait; margin: 0.5in; }
+    @media print {
+      html, body { background:#fff !important; color:#111 !important; }
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .container { max-width:none !important; padding:0 !important; }
+      header.container, main.container, footer.container { padding:0 !important; }
+      .hero { margin:0 0 0.25in 0 !important; box-shadow:none !important; border:none !important; border-radius:0 !important; }
+      .subnav, .search, #printBtn { display:none !important; }
+      .grid-2 { grid-template-columns:1fr 1fr !important; gap:0.35in !important; }
+      .card { box-shadow:none !important; border:1px solid #e5e7eb !important; border-radius:8px !important; }
+      .kpi { break-inside:avoid; }
+      .foot { color:#6b7280 !important; }
+      .title { font-size:22px !important; }
+      .subtitle { font-size:12px !important; }
+      .kpi .label { font-size:11px !important; }
+      .kpi .value { font-size:20px !important; }
+      a.link { color:#111 !important; border-bottom:1px solid #ddd !important; text-decoration:none !important; }
+      .container > * { margin-left:0.25in; margin-right:0.25in; }
+      .hero, .grid-2, #communities, footer.container { margin-left:0.25in; margin-right:0.25in; }
+      #communities { display:none !important; }
+      #communities, #communities.card { page-break-before:auto !important; break-before:auto !important; }
+    }
 
-/* Print-only brand header */
-.print-brand { display:none; }
-@media print {
-  .print-brand {
-    display:flex !important; align-items:center; gap:14px; margin:0 0 0.25in 0; padding-bottom:10px; border-bottom:1px solid #e5e7eb;
-  }
-  .print-logo { height:56px; max-width:260px; object-fit:contain; }
-  .print-contact { font-size:12px; line-height:1.35; }
-  .print-contact strong { font-size:14px; }
-  .print-contact a { color:#111 !important; text-decoration:none; border-bottom:1px solid #ddd; }
-  .print-updated { margin-top:2px; font-size:11px; color:#6b7280; }
-}
+    /* Print-only brand header */
+    .print-brand { display:none; }
+    @media print {
+      .print-brand { display:flex !important; align-items:center; gap:14px; margin:0 0 0.25in 0; padding-bottom:10px; border-bottom:1px solid #e5e7eb; }
+      .print-logo { height:56px; max-width:260px; object-fit:contain; }
+      .print-contact { font-size:12px; line-height:1.35; }
+      .print-contact strong { font-size:14px; }
+      .print-contact a { color:#111 !important; text-decoration:none; border-bottom:1px solid #ddd; }
+      .print-updated { margin-top:2px; font-size:11px; color:#6b7280; }
+    }
 
-/* FAQ */
-#faq .faq-item{ border:1px solid #e9e5d6; border-radius:12px; background:#fff; margin-top:8px; overflow:hidden; }
-#faq summary{ cursor:pointer; padding:12px 14px; list-style:none; font-weight:600; display:flex; align-items:center; justify-content:space-between; }
-#faq summary::-webkit-details-marker{ display:none; }
-#faq summary::after{ content:"▸"; margin-left:10px; transition:transform .15s ease; color:var(--brand-700); }
-#faq .faq-item[open] summary::after{ transform:rotate(90deg); }
-#faq .answer{ padding:0 14px 14px; color:var(--muted); }
-@media print{ #faq{ display:none !important; } }
+    /* FAQ */
+    #faq .faq-item{ border:1px solid #e9e5d6; border-radius:12px; background:#fff; margin-top:8px; overflow:hidden; }
+    #faq summary{ cursor:pointer; padding:12px 14px; list-style:none; font-weight:600; display:flex; align-items:center; justify-content:space-between; }
+    #faq summary::-webkit-details-marker{ display:none; }
+    #faq summary::after{ content:"▸"; margin-left:10px; transition:transform .15s ease; color:var(--brand-700); }
+    #faq .faq-item[open] summary::after{ transform:rotate(90deg); }
+    #faq .answer{ padding:0 14px 14px; color:var(--muted); }
+    @media print{ #faq{ display:none !important; } }
   </style>
 
-<script id="ld-dataset" type="application/ld+json">
-{
-  "@context":"https://schema.org",
-  "@type":"Dataset",
-  "@id":"https://joshwerner.myrealtyonegroup.com/latest-waukesha-cnty-market-stats#dataset",
-  "name":"Waukesha County Housing Market Statistics",
-  "description":"Monthly market stats for Waukesha County, WI (Single-Family & Condo): Median Price, Closed Sales, Days on Market, and Months Supply. Auto-updated from RPR.",
-  "creator":{"@type":"Person","name":"Josh Werner"},
-  "publisher":{"@type":"Organization","name":"Realty ONE Group Luminous"},
-  "isAccessibleForFree": true,
-  "keywords":["Waukesha County","real estate","market statistics","Wisconsin"],
-  "license":"https://www.narrpr.com/terms/",
-  "distribution":[
-    {"@type":"DataDownload","encodingFormat":"application/pdf","contentUrl":"https://www.narrpr.com/reports-v2/c296fac6-035d-4e9a-84fd-28455ab0339f/pdf"},
-    {"@type":"DataDownload","encodingFormat":"application/pdf","contentUrl":"https://www.narrpr.com/reports-v2/5a675486-5c7b-4bb0-9946-0cffa3070f05/pdf"}
-  ],
-  "dateModified":"2025-09-16"
-}
-</script>
+  <!-- JSON-LD (these dates will be synced by JS) -->
+  <script id="ld-dataset" type="application/ld+json">
+  {
+    "@context":"https://schema.org",
+    "@type":"Dataset",
+    "@id":"https://joshwerner.myrealtyonegroup.com/latest-waukesha-cnty-market-stats#dataset",
+    "name":"Waukesha County Housing Market Statistics",
+    "description":"Monthly market stats for Waukesha County, WI (Single-Family & Condo): Median Price, Closed Sales, Days on Market, and Months Supply. Auto-updated from RPR.",
+    "creator":{"@type":"Person","name":"Josh Werner"},
+    "publisher":{"@type":"Organization","name":"Realty ONE Group Luminous"},
+    "isAccessibleForFree": true,
+    "keywords":["Waukesha County","real estate","market statistics","Wisconsin"],
+    "license":"https://www.narrpr.com/terms/",
+    "distribution":[
+      {"@type":"DataDownload","encodingFormat":"application/pdf","contentUrl":"https://www.narrpr.com/reports-v2/c296fac6-035d-4e9a-84fd-28455ab0339f/pdf"},
+      {"@type":"DataDownload","encodingFormat":"application/pdf","contentUrl":"https://www.narrpr.com/reports-v2/5a675486-5c7b-4bb0-9946-0cffa3070f05/pdf"}
+    ],
+    "dateModified":"2025-09-16"
+  }
+  </script>
 
-<script id="ld-webpage" type="application/ld+json">
-{
-  "@context":"https://schema.org",
-  "@type":"WebPage",
-  "name":"Waukesha County Housing Market Statistics",
-  "url":"https://joshwerner.myrealtyonegroup.com/latest-waukesha-cnty-market-stats",
-  "inLanguage":"en-US",
-  "description":"Waukesha County housing market statistics updated daily: median price, closed sales, days on market, and months of supply for single-family homes and condos.",
-  "isPartOf":{"@type":"WebSite","name":"Josh Werner Real Estate","url":"https://joshwerner.homes"},
-  "primaryImageOfPage":{"@type":"ImageObject","url":"https://waukesha-market-stats.vercel.app/og-image.png"}
-}
-</script>
-<script id="ld-faq" type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    {
-      "@type": "Question",
-      "name": "How often are these stats updated?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "County stats refresh automatically within ~48 hours of RPR updating the underlying PDFs. Community links open live RPR reports that always show the latest version."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "What property types are included?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "We publish snapshots for Single-Family homes and Condos/Townhomes. Each panel shows Median Price, Closed Sales, Days on Market, and Months of Supply."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Where do these numbers come from?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Realtors Property Resource® (RPR). The county panels summarize key figures extracted from the Waukesha County RPR PDF; community links point to each city’s live RPR report."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Can I get a custom city or neighborhood report?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Yes—contact Josh and we’ll generate a tailored RPR report with recent comps and trends."
-      }
-    }
-  ]
-}
-</script>
-<!-- Keep meta dates in sync with API.updatedAt -->
-<meta id="meta-lastmod" name="last-modified" content="2025-09-16" />
-<meta id="og-updated" property="og:updated_time" content="2025-09-16T12:00:00Z" />
+  <script id="ld-webpage" type="application/ld+json">
+  {
+    "@context":"https://schema.org",
+    "@type":"WebPage",
+    "name":"Waukesha County Housing Market Statistics",
+    "url":"https://joshwerner.myrealtyonegroup.com/latest-waukesha-cnty-market-stats",
+    "inLanguage":"en-US",
+    "description":"Waukesha County housing market statistics updated daily: median price, closed sales, days on market, and months of supply for single-family homes and condos.",
+    "isPartOf":{"@type":"WebSite","name":"Josh Werner Real Estate","url":"https://joshwerner.homes"},
+    "primaryImageOfPage":{"@type":"ImageObject","url":"https://waukesha-market-stats.vercel.app/og-image.png"}
+  }
+  </script>
 
-<script>
-  // Sync JSON-LD (Dataset + WebPage) and meta dates with API.updatedAt
-  (async () => {
-    try {
-      const r = await fetch("/api/waukesha?ts=" + Date.now(), { cache: "no-store" });
-      const j = await r.json();
-      const d = j?.updatedAt;
-      if (!d) return;
+  <script id="ld-faq" type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {"@type": "Question","name": "How often are these stats updated?","acceptedAnswer": {"@type": "Answer","text": "County stats refresh automatically within ~48 hours of RPR updating the underlying PDFs. Community links open live RPR reports that always show the latest version."}},
+      {"@type": "Question","name": "What property types are included?","acceptedAnswer": {"@type": "Answer","text": "We publish snapshots for Single-Family homes and Condos/Townhomes. Each panel shows Median Price, Closed Sales, Days on Market, and Months of Supply."}},
+      {"@type": "Question","name": "Where do these numbers come from?","acceptedAnswer": {"@type": "Answer","text": "Realtors Property Resource® (RPR). The county panels summarize key figures extracted from the Waukesha County RPR PDF; community links point to each city’s live RPR report."}},
+      {"@type": "Question","name": "Can I get a custom city or neighborhood report?","acceptedAnswer": {"@type": "Answer","text": "Yes—contact Josh and we’ll generate a tailored RPR report with recent comps and trends."}}
+    ]
+  }
+  </script>
 
-      // Update JSON-LD dates
-      const ds = document.getElementById("ld-dataset");
-      if (ds) {
-        const data = JSON.parse(ds.textContent || "{}");
-        data.dateModified = d;
-        ds.textContent = JSON.stringify(data);
-      }
-      const wp = document.getElementById("ld-webpage");
-      if (wp) {
-        const w = JSON.parse(wp.textContent || "{}");
-        w.dateModified = d;
-        wp.textContent = JSON.stringify(w);
-      }
-
-      // Update meta dates (anchor OG time at noon UTC to avoid TZ drift)
-      document.getElementById("meta-lastmod")?.setAttribute("content", d);
-      document.getElementById("og-updated")?.setAttribute("content", d + "T12:00:00Z");
-    } catch {}
-  })();
-</script>
+  <!-- Meta dates; JS updates these -->
+  <meta id="meta-lastmod" name="last-modified" content="2025-09-16" />
+  <meta id="og-updated" property="og:updated_time" content="2025-09-16T12:00:00Z" />
 </head>
 <body>
   <header class="container">
@@ -410,7 +302,7 @@
         <div class="kpis" id="condoKpis"></div>
         <div class="foot">
           <span id="condoNote"></span>
-          <a id="condoReport" class="link" href="https://www.narrpr.com/reports-v2/c296fac6-035d-4e9a-84fd-28455ab0339f/pdf" target="_blank" rel="noopener">Full county report</a>
+          <a id="condoReport" class="link" href="https://www.narrpr.com/reports-v2/5a675486-5c7b-4bb0-9946-0cffa3070f05/pdf" target="_blank" rel="noopener">Full county report</a>
         </div>
       </article>
     </section>
@@ -479,9 +371,7 @@
 
     <section id="related" class="card" style="margin-top:16px">
       <h2 style="margin:0 0 8px 0; font-size:18px">Explore Waukesha Communities</h2>
-      <p class="subtitle" style="margin:6px 0 10px 0">
-        Local market guides and homes for sale by city.
-      </p>
+      <p class="subtitle" style="margin:6px 0 10px 0">Local market guides and homes for sale by city.</p>
       <ul class="related-grid" style="list-style:none; padding:0; margin:0; display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
         <li><a class="link" href="#">Brookfield Market Guide</a></li>
         <li><a class="link" href="#">Menomonee Falls Market Guide</a></li>
@@ -501,15 +391,8 @@
       <h3 id="ctaTitle">Want a custom city or neighborhood report?</h3>
       <p>I’ll send you a fresh, tailored RPR® report with comps and trends—usually same day.</p>
       <div class="cta-actions">
-        <a
-          class="btn"
-          href="mailto:joshwernerrealtor@gmail.com?subject=Custom%20Market%20Report%20Request&body=Hi%20Josh%2C%0A%0AI%E2%80%99d%20like%20a%20custom%20market%20report%20for%3A%20%5Barea%5D.%0A%0AThanks!"
-        >Email Josh</a>
-        <a
-          class="btn outline"
-          href="https://mail.google.com/mail/?view=cm&fs=1&to=joshwernerrealtor@gmail.com&su=Custom%20Market%20Report%20Request&body=Hi%20Josh%2C%0A%0AI%E2%80%99d%20like%20a%20custom%20market%20report%20for%3A%20%5Barea%5D.%0A%0AThanks!"
-          target="_blank" rel="noopener"
-        >Use Gmail</a>
+        <a class="btn" href="mailto:joshwernerrealtor@gmail.com?subject=Custom%20Market%20Report%20Request&body=Hi%20Josh%2C%0A%0AI%E2%80%99d%20like%20a%20custom%20market%20report%20for%3A%20%5Barea%5D.%0A%0AThanks!">Email Josh</a>
+        <a class="btn outline" href="https://mail.google.com/mail/?view=cm&fs=1&to=joshwernerrealtor@gmail.com&su=Custom%20Market%20Report%20Request&body=Hi%20Josh%2C%0A%0AI%E2%80%99d%20like%20a%20custom%20market%20report%20for%3A%20%5Barea%5D.%0A%0AThanks!" target="_blank" rel="noopener">Use Gmail</a>
         <a class="btn-ghost" href="tel:+14147597925" rel="noopener">Call (414) 759-7925</a>
         <a class="btn-ghost" href="https://joshwerner.homes/?utm_source=market-stats&utm_medium=cta&utm_campaign=waukesha" target="_blank" rel="noopener">Visit Website</a>
       </div>
@@ -520,501 +403,224 @@
     <p style="font-size:12px;color:var(--muted)">Source: Realtors Property Resource® (RPR). County stats auto-refresh from the county PDF via a secure API.</p>
   </footer>
 
-<script>
-(() => {
-  const ENDPOINT = "/api/waukesha"; // or /api/waukesha-live if that’s what you’re using
-
-  // Communities
-  const COMMUNITIES = [
-    { name: "Brookfield",        url: "https://www.narrpr.com/reports-v2/97a381b7-10f7-40e6-9e36-852d9a194cdf/pdf" },
-    { name: "Menomonee Falls",   url: "https://www.narrpr.com/reports-v2/e88b179b-2c39-4b51-9968-f4d8b6df89cb/pdf" },
-    { name: "New Berlin",        url: "https://www.narrpr.com/reports-v2/0eedbe20-e01d-4e10-8791-79e0e18f6853/pdf" },
-    { name: "Muskego",           url: "https://www.narrpr.com/reports-v2/adda4cc2-f31f-4549-a499-793c061484b8/pdf" },
-    { name: "Pewaukee",          url: "https://www.narrpr.com/reports-v2/d62c13ba-f21d-44d4-b4f1-cb89d62cfd1d/pdf" },
-    { name: "Oconomowoc",        url: "https://www.narrpr.com/reports-v2/2635ef10-f399-4498-987f-34784fca249a/pdf" },
-    { name: "Hartland",          url: "https://www.narrpr.com/reports-v2/579c97c4-b4d9-4eb4-980e-890348286b9b/pdf" },
-    { name: "Delafield",         url: "https://www.narrpr.com/reports-v2/cfaf9afb-4e22-44b9-b114-0d64b1be0639/pdf" },
-    { name: "Mukwonago",         url: "https://www.narrpr.com/reports-v2/17d2ea0c-a2d7-4dce-954c-e2140ac59f88/pdf" },
-    { name: "Sussex",            url: "https://www.narrpr.com/reports-v2/41f387a4-b092-42c4-b23a-b3575ae52116/pdf" }
-  ];
-
-  // Params / iframe detection
-  const params = new URLSearchParams(location.search);
-  const isEmbedded = (window.top !== window.self);
-  const shouldAutoPrint = params.get('print') === '1';
-
-  // Shortcuts
-  const $=(q,el=document)=>el.querySelector(q);
-
-  // Elements
-  const updatedAtEl=$("#updatedAt"), monthSelect=$("#monthSelect");
-  const sfMonthEl=$("#sfMonth"), condoMonthEl=$("#condoMonth");
-  const sfKpis=$("#sfKpis"), condoKpis=$("#condoKpis");
-  const sfReport=$("#sfReport"), condoReport=$("#condoReport");
-  const searchInput=$("#searchInput"), communityGrid=$("#communityGrid");
-
-  // Formatters
-  const fCurrency=v=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0}).format(v);
-  const fNumber=v=>new Intl.NumberFormat("en-US").format(v);
-  const fNumber1=v=>new Intl.NumberFormat("en-US",{maximumFractionDigits:1}).format(v);
-
-  // KPI
-  function kpiEl(label, value, prev, type){
-    const el = document.createElement("div");
-    el.className = "kpi";
-
-    const hasValue = typeof value === "number" && !Number.isNaN(value);
-    const hasPrev  = typeof prev  === "number" && !Number.isNaN(prev);
-
-    let formatted = "—";
-    if (hasValue) {
-      formatted = type === "currency" ? fCurrency(value)
-                : type === "number1" ? fNumber1(value)
-                : fNumber(value);
-    }
-
-    let deltaBlock = "";
-    if (hasValue && hasPrev) {
-      const diff = value - prev;
-      const dir  = diff === 0 ? 0 : (diff > 0 ? 1 : -1);
-      const pct  = prev === 0 ? 0 : (diff / prev) * 100;
-      const arrow = dir === 0 ? "—" : (dir > 0 ? "▲" : "▼");
-      const cls   = dir === 0 ? "" : (dir > 0 ? "up" : "down");
-      deltaBlock = `<div class="delta ${cls}">${arrow} ${Math.abs(pct).toFixed(1)}% MoM</div>`;
-    }
-
-    el.innerHTML = `
-      <div class="label">${label}</div>
-      <div class="value">${formatted}</div>
-      ${deltaBlock}
-    `;
-    return el;
-  }
-
-  function paintMonth(key, dataObj){
-    const months=Object.keys(dataObj.months).sort();
-    const idx=months.indexOf(key); const cur=dataObj.months[key]; const prev=dataObj.months[months[idx-1]];
-    const [y,m]=key.split("-"); const label=new Date(+y, +m-1, 1).toLocaleDateString(undefined,{month:"long",year:"numeric"});
-    if (sfMonthEl) sfMonthEl.textContent=label;
-    if (condoMonthEl) condoMonthEl.textContent=label;
-    if (sfKpis) sfKpis.innerHTML="";
-    if (condoKpis) condoKpis.innerHTML="";
-
-    const METRICS = [
-      { key:"medianPrice",   label:"Median Price",   type:"currency" },
-      { key:"closed",        label:"Closed Sales",   type:"number"   },
-      { key:"dom",           label:"Days on Market", type:"number"   },
-      { key:"monthsSupply",  label:"Months Supply",  type:"number1"  },
-      { key:"activeListings",label:"Active Listings",type:"number"   }
-    ];
-
-    METRICS.forEach(m=>{
-      if (sfKpis) sfKpis.appendChild(kpiEl(m.label, cur.sf?.[m.key],    prev?.sf?.[m.key],    m.type));
-      if (condoKpis) condoKpis.appendChild(kpiEl(m.label, cur.condo?.[m.key], prev?.condo?.[m.key], m.type));
-    });
-  }
-
-  function renderCommunities(list){
-    if (!communityGrid) return;
-    communityGrid.innerHTML="";
-    list.forEach(c=>{
-      const a=document.createElement("a");
-      a.className="community-card";
-      a.href=c.url; a.target="_blank"; a.rel="noopener";
-      a.innerHTML=`<span>${c.name}</span><span style="color:#9ca3af">PDF →</span>`;
-      communityGrid.appendChild(a);
-    });
-  }
-
+  <!-- Single, clean script: fetch data, sync dates/SEO, render KPIs + communities, print behavior -->
   <script>
-  function render(payload){
-    // 1) Updated badge comes from /api/updated-at (RPR’s Last-Modified)
-    (async () => {
-      try {
-        const r = await fetch("/api/updated-at?ts=" + Date.now(), { cache: "no-store" });
-        const j = await r.json();
-        const d = j?.updatedAt;
-        const el = document.getElementById("updatedAt");
-        if (el && d) el.textContent = new Date(d + "T12:00:00Z").toLocaleDateString();
-        // Keep meta tags in sync for SEO
-        const metaLast = document.getElementById("meta-lastmod");
-        const ogUpd = document.getElementById("og-updated");
-        if (metaLast) metaLast.setAttribute("content", d);
-        if (ogUpd) ogUpd.setAttribute("content", d + "T12:00:00Z");
-        // Also update JSON-LD blocks if present
-        const ds = document.getElementById("ld-dataset");
-        if (ds) {
-          const data = JSON.parse(ds.textContent || "{}");
-          data.dateModified = d;
-          ds.textContent = JSON.stringify(data);
-        }
-        const wp = document.getElementById("ld-webpage");
-        if (wp) {
-          const w = JSON.parse(wp.textContent || "{}");
-          w.dateModified = d;
-          wp.textContent = JSON.stringify(w);
-        }
-      } catch {
-        // Silent fail. Badge will just stay as-is.
-      }
-    })();
+    (function () {
+      const ENDPOINT = "/api/waukesha";
 
-    // 2) Month dropdown and KPI panels still use /api/waukesha data
-    const updatedAtEl = document.getElementById("updatedAt");
-    const monthSelect  = document.getElementById("monthSelect");
-    const sfMonthEl    = document.getElementById("sfMonth");
-    const condoMonthEl = document.getElementById("condoMonth");
-    const sfKpis       = document.getElementById("sfKpis");
-    const condoKpis    = document.getElementById("condoKpis");
-    const sfReport     = document.getElementById("sfReport");
-    const condoReport  = document.getElementById("condoReport");
+      // Elements
+      const $ = (q, el = document) => el.querySelector(q);
+      const updatedAtEl = $("#updatedAt");
+      const monthSelect = $("#monthSelect");
+      const sfMonthEl = $("#sfMonth");
+      const condoMonthEl = $("#condoMonth");
+      const sfKpis = $("#sfKpis");
+      const condoKpis = $("#condoKpis");
+      const sfReport = $("#sfReport");
+      const condoReport = $("#condoReport");
+      const printUpdated = $("#printUpdated");
+      const printBtn = $("#printBtn");
+      const searchInput = $("#searchInput");
+      const communityGrid = $("#communityGrid");
 
-    const fCurrency=v=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0}).format(v);
-    const fNumber=v=>new Intl.NumberFormat("en-US").format(v);
-    const fNumber1=v=>new Intl.NumberFormat("en-US",{maximumFractionDigits:1}).format(v);
-
-    function kpiEl(label, value, prev, type){
-      const el = document.createElement("div");
-      el.className = "kpi";
-      const hasValue = typeof value === "number" && !Number.isNaN(value);
-      const hasPrev  = typeof prev  === "number" && !Number.isNaN(prev);
-
-      let formatted = "—";
-      if (hasValue) {
-        formatted = type === "currency" ? fCurrency(value)
-                  : type === "number1" ? fNumber1(value)
-                  : fNumber(value);
-      }
-
-      let deltaBlock = "";
-      if (hasValue && hasPrev) {
-        const diff = value - prev;
-        const dir  = diff === 0 ? 0 : (diff > 0 ? 1 : -1);
-        const pct  = prev === 0 ? 0 : (diff / prev) * 100;
-        const arrow = dir === 0 ? "—" : (dir > 0 ? "▲" : "▼");
-        const cls   = dir === 0 ? "" : (dir > 0 ? "up" : "down");
-        deltaBlock = `<div class="delta ${cls}">${arrow} ${Math.abs(pct).toFixed(1)}% MoM</div>`;
-      }
-
-      el.innerHTML = `
-        <div class="label">${label}</div>
-        <div class="value">${formatted}</div>
-        ${deltaBlock}
-      `;
-      return el;
-    }
-
-    function paintMonth(key, dataObj){
-      const months=Object.keys(dataObj.months).sort();
-      const idx=months.indexOf(key); const cur=dataObj.months[key]; const prev=dataObj.months[months[idx-1]];
-      const [y,m]=key.split("-"); const label=new Date(+y, +m-1, 1).toLocaleDateString(undefined,{month:"long",year:"numeric"});
-      if (sfMonthEl) sfMonthEl.textContent=label;
-      if (condoMonthEl) condoMonthEl.textContent=label;
-      if (sfKpis) sfKpis.innerHTML="";
-      if (condoKpis) condoKpis.innerHTML="";
-
-      const METRICS = [
-        { key:"medianPrice",   label:"Median Price",   type:"currency" },
-        { key:"closed",        label:"Closed Sales",   type:"number"   },
-        { key:"dom",           label:"Days on Market", type:"number"   },
-        { key:"monthsSupply",  label:"Months Supply",  type:"number1"  },
-        { key:"activeListings",label:"Active Listings",type:"number"   }
+      const COMMUNITIES = [
+        { name: "Brookfield", url: "https://www.narrpr.com/reports-v2/97a381b7-10f7-40e6-9e36-852d9a194cdf/pdf" },
+        { name: "Menomonee Falls", url: "https://www.narrpr.com/reports-v2/e88b179b-2c39-4b51-9968-f4d8b6df89cb/pdf" },
+        { name: "New Berlin", url: "https://www.narrpr.com/reports-v2/0eedbe20-e01d-4e10-8791-79e0e18f6853/pdf" },
+        { name: "Muskego", url: "https://www.narrpr.com/reports-v2/adda4cc2-f31f-4549-a499-793c061484b8/pdf" },
+        { name: "Pewaukee", url: "https://www.narrpr.com/reports-v2/d62c13ba-f21d-44d4-b4f1-cb89d62cfd1d/pdf" },
+        { name: "Oconomowoc", url: "https://www.narrpr.com/reports-v2/2635ef10-f399-4498-987f-34784fca249a/pdf" },
+        { name: "Hartland", url: "https://www.narrpr.com/reports-v2/579c97c4-b4d9-4eb4-980e-890348286b9b/pdf" },
+        { name: "Delafield", url: "https://www.narrpr.com/reports-v2/cfaf9afb-4e22-44b9-b114-0d64b1be0639/pdf" },
+        { name: "Mukwonago", url: "https://www.narrpr.com/reports-v2/17d2ea0c-a2d7-4dce-954c-e2140ac59f88/pdf" },
+        { name: "Sussex", url: "https://www.narrpr.com/reports-v2/41f387a4-b092-42c4-b23a-b3575ae52116/pdf" }
       ];
 
-      METRICS.forEach(m=>{
-        if (sfKpis) sfKpis.appendChild(kpiEl(m.label, cur.sf?.[m.key],    prev?.sf?.[m.key],    m.type));
-        if (condoKpis) condoKpis.appendChild(kpiEl(m.label, cur.condo?.[m.key], prev?.condo?.[m.key], m.type));
-      });
+      // Formatters
+      const fCurrency = v => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v);
+      const fNumber = v => new Intl.NumberFormat("en-US").format(v);
+      const fNumber1 = v => new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format(v);
 
-      // Update report links to the latest month’s PDFs when present
-      if (sfReport && cur?.sfReport) sfReport.href = cur.sfReport;
-      if (condoReport && cur?.condoReport) condoReport.href = cur.condoReport;
-    }
+      function kpiEl(label, value, prev, type) {
+        const el = document.createElement("div");
+        el.className = "kpi";
+        const ok = typeof value === "number" && !Number.isNaN(value);
+        const havePrev = typeof prev === "number" && !Number.isNaN(prev);
 
-    // Build the month dropdown and paint the newest month
-    const months=Object.keys(payload.months).sort().reverse();
-    if (monthSelect) {
-      monthSelect.innerHTML="";
-      months.forEach(k=>{
-        const [y,m]=k.split("-"); const dt=new Date(+y,+m-1,1);
-        const opt=document.createElement("option");
-        opt.value=k;
-        opt.textContent=dt.toLocaleDateString(undefined,{month:"long",year:"numeric"});
-        monthSelect.appendChild(opt);
-      });
-      monthSelect.value=months[0];
-      monthSelect.onchange=e=>paintMonth(e.target.value, payload);
-    }
+        let txt = "—";
+        if (ok) {
+          txt = type === "currency" ? fCurrency(value)
+            : type === "number1" ? fNumber1(value)
+            : fNumber(value);
+        }
 
-    paintMonth(months[0], payload);
+        let delta = "";
+        if (ok && havePrev) {
+          const diff = value - prev;
+          const dir = diff === 0 ? 0 : (diff > 0 ? 1 : -1);
+          const pct = prev === 0 ? 0 : (diff / prev) * 100;
+          const arrow = dir === 0 ? "—" : (dir > 0 ? "▲" : "▼");
+          const cls = dir === 0 ? "" : (dir > 0 ? "up" : "down");
+          delta = `<div class="delta ${cls}">${arrow} ${Math.abs(pct).toFixed(1)}% MoM</div>`;
+        }
 
-    // Print header date
-    const pu = document.getElementById("printUpdated");
-    if (pu && payload?.updatedAt) pu.textContent = "Updated " + new Date(payload.updatedAt).toLocaleDateString();
-
-    // Print button behavior is unchanged; handled elsewhere in the file
-  }
-</script>
-
-    // Auto-print if opened with ?print=1
-    const params = new URLSearchParams(location.search);
-    const shouldAutoPrint = params.get('print') === '1';
-    if (shouldAutoPrint) setTimeout(() => window.print(), 300);
-  }
-
-  async function boot(){
-    try{
-      // Optional embed mode chrome hide
-      const params = new URLSearchParams(location.search);
-      if (params.get('embed') === '1') document.body.classList.add('embed');
-
-      const r = await fetch(ENDPOINT + "?ts=" + Date.now(), { cache: "no-store" });
-      if(!r.ok) throw new Error(`API ${r.status} ${r.statusText}`);
-      const json=await r.json();
-      render(json);
-    }catch(e){
-      console.error(e);
-      const err = `<div class="kpi"><div class="label">Status</div><div class="value" style="font-size:16px">Couldn’t load live stats</div><div class="delta" style="color:#b91c1c">${(e && e.message) ? e.message : String(e)}</div></div>`;
-      const sfKpis=document.getElementById("sfKpis");
-      const condoKpis=document.getElementById("condoKpis");
-      if (sfKpis) sfKpis.innerHTML = err;
-      if (condoKpis) condoKpis.innerHTML = err;
-    }
-  }
-
-  document.addEventListener("DOMContentLoaded", boot);
-})();
-</script>
-<script>
-/* ===== Waukesha Market Stats (communities restored) =====
-   - Renders SF/Condo KPIs from /api/waukesha
-   - Sets “Updated” badge from /api/updated-at (RPR Last-Modified)
-   - Renders the Communities grid + search
-*/
-(function () {
-  const $ = (q, el = document) => el.querySelector(q);
-
-  // Core elements
-  const updatedAtEl = $("#updatedAt");
-  const monthSelect = $("#monthSelect");
-  const sfMonthEl   = $("#sfMonth");
-  const condoMonthEl= $("#condoMonth");
-  const sfKpis      = $("#sfKpis");
-  const condoKpis   = $("#condoKpis");
-  const sfReport    = $("#sfReport");
-  const condoReport = $("#condoReport");
-  const printUpdated= $("#printUpdated");
-  const printBtn    = $("#printBtn");
-
-  // Communities UI
-  const searchInput = $("#searchInput");
-  const communityGrid = $("#communityGrid");
-
-  const COMMUNITIES = [
-    { name: "Brookfield",        url: "https://www.narrpr.com/reports-v2/97a381b7-10f7-40e6-9e36-852d9a194cdf/pdf" },
-    { name: "Menomonee Falls",   url: "https://www.narrpr.com/reports-v2/e88b179b-2c39-4b51-9968-f4d8b6df89cb/pdf" },
-    { name: "New Berlin",        url: "https://www.narrpr.com/reports-v2/0eedbe20-e01d-4e10-8791-79e0e18f6853/pdf" },
-    { name: "Muskego",           url: "https://www.narrpr.com/reports-v2/adda4cc2-f31f-4549-a499-793c061484b8/pdf" },
-    { name: "Pewaukee",          url: "https://www.narrpr.com/reports-v2/d62c13ba-f21d-44d4-b4f1-cb89d62cfd1d/pdf" },
-    { name: "Oconomowoc",        url: "https://www.narrpr.com/reports-v2/2635ef10-f399-4498-987f-34784fca249a/pdf" },
-    { name: "Hartland",          url: "https://www.narrpr.com/reports-v2/579c97c4-b4d9-4eb4-980e-890348286b9b/pdf" },
-    { name: "Delafield",         url: "https://www.narrpr.com/reports-v2/cfaf9afb-4e22-44b9-b114-0d64b1be0639/pdf" },
-    { name: "Mukwonago",         url: "https://www.narrpr.com/reports-v2/17d2ea0c-a2d7-4dce-954c-e2140ac59f88/pdf" },
-    { name: "Sussex",            url: "https://www.narrpr.com/reports-v2/41f387a4-b092-42c4-b23a-b3575ae52116/pdf" }
-  ];
-
-  function renderCommunities(list) {
-    if (!communityGrid) return;
-    communityGrid.innerHTML = "";
-    if (!Array.isArray(list) || !list.length) {
-      const p = document.createElement("p");
-      p.className = "muted";
-      p.textContent = "No matching communities.";
-      communityGrid.appendChild(p);
-      return;
-    }
-    for (const c of list) {
-      const a = document.createElement("a");
-      a.className = "community-card";
-      a.href = c.url;
-      a.target = "_blank";
-      a.rel = "noopener";
-      a.setAttribute("aria-label", c.name + " market report PDF");
-      a.innerHTML = `<span>${c.name}</span><span style="color:#9ca3af">PDF →</span>`;
-      communityGrid.appendChild(a);
-    }
-  }
-
-  function wireCommunitySearch() {
-    if (!searchInput) return;
-    renderCommunities(COMMUNITIES);
-    searchInput.addEventListener("input", () => {
-      const q = searchInput.value.trim().toLowerCase();
-      if (!q) return renderCommunities(COMMUNITIES);
-      const filtered = COMMUNITIES.filter(c => c.name.toLowerCase().includes(q));
-      renderCommunities(filtered);
-    });
-  }
-
-  // ---------- Formatters ----------
-  const fCurrency = v => new Intl.NumberFormat("en-US", { style:"currency", currency:"USD", maximumFractionDigits:0 }).format(v);
-  const fNumber   = v => new Intl.NumberFormat("en-US").format(v);
-  const fNumber1  = v => new Intl.NumberFormat("en-US", { maximumFractionDigits:1 }).format(v);
-
-  function kpiEl(label, value, prev, type) {
-    const el = document.createElement("div");
-    el.className = "kpi";
-    const ok = typeof value === "number" && !Number.isNaN(value);
-    const havePrev = typeof prev === "number" && !Number.isNaN(prev);
-
-    let txt = "—";
-    if (ok) {
-      txt = type === "currency" ? fCurrency(value)
-          : type === "number1"  ? fNumber1(value)
-          : fNumber(value);
-    }
-
-    let delta = "";
-    if (ok && havePrev) {
-      const diff = value - prev;
-      const dir = diff === 0 ? 0 : (diff > 0 ? 1 : -1);
-      const pct = prev === 0 ? 0 : (diff / prev) * 100;
-      const arrow = dir === 0 ? "—" : (dir > 0 ? "▲" : "▼");
-      const cls = dir === 0 ? "" : (dir > 0 ? "up" : "down");
-      delta = `<div class="delta ${cls}">${arrow} ${Math.abs(pct).toFixed(1)}% MoM</div>`;
-    }
-
-    el.innerHTML = `<div class="label">${label}</div><div class="value">${txt}</div>${delta}`;
-    return el;
-  }
-
-  function paintMonth(key, payload) {
-    if (!payload?.months) return;
-    const months = Object.keys(payload.months).sort();
-    const i = months.indexOf(key);
-    const cur = payload.months[key];
-    const prev = payload.months[months[i - 1]];
-    const [y, m] = key.split("-");
-    const label = new Date(+y, +m - 1, 1).toLocaleDateString(undefined, { month:"long", year:"numeric" });
-
-    if (sfMonthEl)   sfMonthEl.textContent = label;
-    if (condoMonthEl) condoMonthEl.textContent = label;
-    if (sfKpis)      sfKpis.innerHTML = "";
-    if (condoKpis)   condoKpis.innerHTML = "";
-
-    const METRICS = [
-      { key:"medianPrice",    label:"Median Price",    type:"currency" },
-      { key:"closed",         label:"Closed Sales",    type:"number"   },
-      { key:"dom",            label:"Days on Market",  type:"number"   },
-      { key:"monthsSupply",   label:"Months Supply",   type:"number1"  },
-      { key:"activeListings", label:"Active Listings", type:"number"   }
-    ];
-
-    for (const mdef of METRICS) {
-      if (sfKpis)    sfKpis.appendChild(kpiEl(mdef.label, cur.sf?.[mdef.key],    prev?.sf?.[mdef.key],    mdef.type));
-      if (condoKpis) condoKpis.appendChild(kpiEl(mdef.label, cur.condo?.[mdef.key], prev?.condo?.[mdef.key], mdef.type));
-    }
-
-    if (sfReport && cur?.sfReport)       sfReport.href = cur.sfReport;
-    if (condoReport && cur?.condoReport) condoReport.href = cur.condoReport;
-
-    if (printUpdated && payload?.updatedAt) {
-      try { printUpdated.textContent = "Updated " + new Date(payload.updatedAt).toLocaleDateString(); } catch {}
-    }
-  }
-
-  function buildMonthDropdown(payload) {
-    if (!monthSelect || !payload?.months) return;
-    const months = Object.keys(payload.months).sort().reverse();
-    monthSelect.innerHTML = "";
-    for (const k of months) {
-      const [y, m] = k.split("-");
-      const dt = new Date(+y, +m - 1, 1);
-      const opt = document.createElement("option");
-      opt.value = k;
-      opt.textContent = dt.toLocaleDateString(undefined, { month:"long", year:"numeric" });
-      monthSelect.appendChild(opt);
-    }
-    monthSelect.value = months[0];
-    monthSelect.onchange = e => paintMonth(e.target.value, payload);
-    paintMonth(months[0], payload);
-  }
-
-  async function loadWaukesha() {
-    const r = await fetch("/api/waukesha?ts=" + Date.now(), { cache: "no-store" });
-    if (!r.ok) throw new Error("API /api/waukesha failed " + r.status);
-    return r.json();
-  }
-
-  async function loadUpdatedAt() {
-    const r = await fetch("/api/updated-at?ts=" + Date.now(), { cache: "no-store" });
-    if (!r.ok) throw new Error("API /api/updated-at failed " + r.status);
-    return r.json();
-  }
-
-  function applyUpdatedAt(updated) {
-    const d = updated?.updatedAt;
-    if (!d) return;
-    if (updatedAtEl) {
-      try { updatedAtEl.textContent = new Date(d + "T12:00:00Z").toLocaleDateString(); } catch {}
-    }
-    $("#meta-lastmod")?.setAttribute("content", d);
-    $("#og-updated")?.setAttribute("content", d + "T12:00:00Z");
-
-    const ds = $("#ld-dataset");
-    if (ds) {
-      try { const data = JSON.parse(ds.textContent || "{}"); data.dateModified = d; ds.textContent = JSON.stringify(data); } catch {}
-    }
-    const wp = $("#ld-webpage");
-    if (wp) {
-      try { const w = JSON.parse(wp.textContent || "{}"); w.dateModified = d; wp.textContent = JSON.stringify(w); } catch {}
-    }
-  }
-
-  function wirePrint() {
-    if (!printBtn) return;
-    const isEmbedded = (window.top !== window.self);
-    printBtn.onclick = () => {
-      if (isEmbedded) {
-        const url = new URL(location.href);
-        url.searchParams.set("print","1");
-        url.searchParams.delete("embed");
-        window.open(url.toString(), "_blank", "noopener");
-      } else {
-        window.print();
+        el.innerHTML = `<div class="label">${label}</div><div class="value">${txt}</div>${delta}`;
+        return el;
       }
-    };
-    const params = new URLSearchParams(location.search);
-    if (params.get("print") === "1") setTimeout(() => window.print(), 300);
-  }
 
-  async function boot() {
-    // Optional embed mode chrome hide
-    const params = new URLSearchParams(location.search);
-    if (params.get("embed") === "1") document.body.classList.add("embed");
+      function paintMonth(key, payload) {
+        if (!payload?.months) return;
+        const months = Object.keys(payload.months).sort();
+        const idx = months.indexOf(key);
+        const cur = payload.months[key];
+        const prev = payload.months[months[idx - 1]];
+        const [y, m] = key.split("-");
+        const label = new Date(+y, +m - 1, 1).toLocaleDateString(undefined, { month: "long", year: "numeric" });
 
-    wirePrint();
-    wireCommunitySearch();
+        if (sfMonthEl) sfMonthEl.textContent = label;
+        if (condoMonthEl) condoMonthEl.textContent = label;
+        if (sfKpis) sfKpis.innerHTML = "";
+        if (condoKpis) condoKpis.innerHTML = "";
 
-    try {
-      const [payload, upd] = await Promise.allSettled([loadWaukesha(), loadUpdatedAt()]);
-      if (payload.status === "fulfilled" && payload.value) {
-        buildMonthDropdown(payload.value);
-      } else {
-        const err = `<div class="kpi"><div class="label">Status</div><div class="value" style="font-size:16px">Couldn’t load live stats</div><div class="delta" style="color:#b91c1c">${payload.reason ? String(payload.reason) : "Unknown error"}</div></div>`;
-        if (sfKpis)    sfKpis.innerHTML = err;
-        if (condoKpis) condoKpis.innerHTML = err;
+        const METRICS = [
+          { key: "medianPrice", label: "Median Price", type: "currency" },
+          { key: "closed", label: "Closed Sales", type: "number" },
+          { key: "dom", label: "Days on Market", type: "number" },
+          { key: "monthsSupply", label: "Months Supply", type: "number1" },
+          { key: "activeListings", label: "Active Listings", type: "number" }
+        ];
+
+        for (const mdef of METRICS) {
+          if (sfKpis) sfKpis.appendChild(kpiEl(mdef.label, cur.sf?.[mdef.key], prev?.sf?.[mdef.key], mdef.type));
+          if (condoKpis) condoKpis.appendChild(kpiEl(mdef.label, cur.condo?.[mdef.key], prev?.condo?.[mdef.key], mdef.type));
+        }
+
+        if (sfReport && cur?.sfReport) sfReport.href = cur.sfReport;
+        if (condoReport && cur?.condoReport) condoReport.href = cur.condoReport;
+
+        if (printUpdated && payload?.updatedAt) {
+          try { printUpdated.textContent = "Updated " + new Date(payload.updatedAt).toLocaleDateString(); } catch {}
+        }
       }
-      if (upd.status === "fulfilled" && upd.value) {
-        applyUpdatedAt(upd.value);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }
 
-  document.addEventListener("DOMContentLoaded", boot);
-})();
-</script>
+      function buildMonthDropdown(payload) {
+        if (!monthSelect || !payload?.months) return;
+        const months = Object.keys(payload.months).sort().reverse();
+        monthSelect.innerHTML = "";
+        for (const k of months) {
+          const [y, m] = k.split("-");
+          const dt = new Date(+y, +m - 1, 1);
+          const opt = document.createElement("option");
+          opt.value = k;
+          opt.textContent = dt.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+          monthSelect.appendChild(opt);
+        }
+        monthSelect.value = months[0];
+        monthSelect.onchange = e => paintMonth(e.target.value, payload);
+        paintMonth(months[0], payload);
+      }
+
+      function renderCommunities(list) {
+        if (!communityGrid) return;
+        communityGrid.innerHTML = "";
+        if (!Array.isArray(list) || !list.length) {
+          const p = document.createElement("p");
+          p.className = "muted";
+          p.textContent = "No matching communities.";
+          communityGrid.appendChild(p);
+          return;
+        }
+        for (const c of list) {
+          const a = document.createElement("a");
+          a.className = "community-card";
+          a.href = c.url;
+          a.target = "_blank";
+          a.rel = "noopener";
+          a.setAttribute("aria-label", c.name + " market report PDF");
+          a.innerHTML = `<span>${c.name}</span><span style="color:#9ca3af">PDF →</span>`;
+          communityGrid.appendChild(a);
+        }
+      }
+
+      function wireCommunitySearch() {
+        if (!searchInput) return;
+        renderCommunities(COMMUNITIES);
+        searchInput.addEventListener("input", () => {
+          const q = searchInput.value.trim().toLowerCase();
+          if (!q) return renderCommunities(COMMUNITIES);
+          const filtered = COMMUNITIES.filter(c => c.name.toLowerCase().includes(q));
+          renderCommunities(filtered);
+        });
+      }
+
+      async function loadWaukesha() {
+        const r = await fetch(ENDPOINT + "?ts=" + Date.now(), { cache: "no-store" });
+        if (!r.ok) throw new Error("API " + r.status + " " + r.statusText);
+        return r.json();
+      }
+      async function loadUpdatedAt() {
+        const r = await fetch("/api/updated-at?ts=" + Date.now(), { cache: "no-store" });
+        if (!r.ok) throw new Error("API /api/updated-at failed " + r.status);
+        return r.json();
+      }
+      function applyUpdatedAt(updated) {
+        const d = updated?.updatedAt;
+        if (!d) return;
+        if (updatedAtEl) {
+          try { updatedAtEl.textContent = new Date(d + "T12:00:00Z").toLocaleDateString(); } catch {}
+        }
+        $("#meta-lastmod")?.setAttribute("content", d);
+        $("#og-updated")?.setAttribute("content", d + "T12:00:00Z");
+        const ds = $("#ld-dataset");
+        if (ds) { try { const data = JSON.parse(ds.textContent || "{}"); data.dateModified = d; ds.textContent = JSON.stringify(data); } catch {} }
+        const wp = $("#ld-webpage");
+        if (wp) { try { const w = JSON.parse(wp.textContent || "{}"); w.dateModified = d; wp.textContent = JSON.stringify(w); } catch {} }
+      }
+
+      function wirePrint() {
+        if (!printBtn) return;
+        const isEmbedded = (window.top !== window.self);
+        printBtn.onclick = () => {
+          if (isEmbedded) {
+            const url = new URL(location.href);
+            url.searchParams.set("print","1");
+            url.searchParams.delete("embed");
+            window.open(url.toString(), "_blank", "noopener");
+          } else {
+            window.print();
+          }
+        };
+        const params = new URLSearchParams(location.search);
+        if (params.get("print") === "1") setTimeout(() => window.print(), 300);
+      }
+
+      async function boot() {
+        // Optional embed chromeless mode
+        const params = new URLSearchParams(location.search);
+        if (params.get("embed") === "1") document.body.classList.add("embed");
+
+        wirePrint();
+        wireCommunitySearch();
+
+        try {
+          const [payload, upd] = await Promise.allSettled([loadWaukesha(), loadUpdatedAt()]);
+          if (payload.status === "fulfilled" && payload.value) {
+            buildMonthDropdown(payload.value);
+          } else {
+            const err = `<div class="kpi"><div class="label">Status</div><div class="value" style="font-size:16px">Couldn’t load live stats</div><div class="delta" style="color:#b91c1c">${payload.reason ? String(payload.reason) : "Unknown error"}</div></div>`;
+            if (sfKpis) sfKpis.innerHTML = err;
+            if (condoKpis) condoKpis.innerHTML = err;
+          }
+          if (upd.status === "fulfilled" && upd.value) {
+            applyUpdatedAt(upd.value);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", boot);
+    })();
+  </script>
 </body>
 </html>
