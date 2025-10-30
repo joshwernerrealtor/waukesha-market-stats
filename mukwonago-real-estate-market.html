@@ -2,172 +2,53 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <title>Mukwonago Real Estate Market Guide</title>
+  <meta name="description" content="A local guide to living in Mukwonago, WI — housing trends, neighborhoods, parks, schools, golf courses, coffee shops, and what makes this community special." />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Mukwonago Market Guide | Josh Werner – Realty ONE Group Luminous</title>
-  <meta name="description" content="A friendly, data‑smart guide to living in Mukwonago: neighborhoods, schools, parks, coffee shops, golf, events, and how to start your home search with confidence." />
-  <link rel="canonical" href="https://waukesha-market-stats.vercel.app/mukwonago-market-guide" />
+  <meta property="og:title" content="Mukwonago Real Estate Market Guide" />
+  <meta property="og:description" content="Thinking about moving to Mukwonago? This locally written guide covers neighborhoods, home prices, lifestyle, parks, and schools." />
+  <meta property="og:type" content="website" />
   <meta name="theme-color" content="#C5A349" />
 
-  <!-- OpenGraph / Twitter -->
-  <meta property="og:type" content="website" />
-  <meta property="og:title" content="Mukwonago Market Guide" />
-  <meta property="og:description" content="Neighborhoods, schools, parks, coffee, golf, events, and practical tips for moving to Mukwonago." />
-  <meta property="og:url" content="https://waukesha-market-stats.vercel.app/mukwonago-market-guide" />
-  <meta property="og:image" content="/images/mukwonago-hero.jpg" />
-  <meta name="twitter:card" content="summary_large_image" />
-
   <style>
-    :root{
-      --brand:#C5A349; --ink:#1f2937; --muted:#6b7280; --bg:#fbfaf7; --card:#fff;
-      --radius:16px; --shadow:0 10px 24px rgba(0,0,0,.08); --shadow-sm:0 4px 12px rgba(0,0,0,.06);
-      --maxw:1100px;
-    }
-    html,body{height:100%}
-    body{margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; color:var(--ink); background:var(--bg)}
-    .container{max-width:var(--maxw); margin-inline:auto; padding:24px}
-
-    /* Hero (Layout B: split with single image) */
-    .hero{display:grid; grid-template-columns:1fr; gap:16px; align-items:stretch}
-    @media(min-width:980px){ .hero{ grid-template-columns:1.1fr .9fr } }
-    .hero-card{background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:18px}
-    .hero h1{margin:0 0 6px 0; font-size:clamp(24px,3vw,36px); font-weight:800}
-    .hero p{margin:6px 0 12px 0; color:var(--muted)}
-    .badge{display:inline-block; background:#fff7e6; border:1px solid #f0e2be; color:#7a5c13; padding:4px 10px; border-radius:999px; font-size:12px}
-    .hero-img{position:relative; border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow)}
-    .hero-img picture, .hero-img img{display:block; width:100%; height:100%; object-fit:cover}
-    .credit{position:absolute; right:10px; bottom:10px; background:rgba(255,255,255,.88); padding:4px 8px; border-radius:8px; font-size:12px; color:#4b5563}
-
-    /* Grid sections */
-    .grid-2{display:grid; grid-template-columns:1fr; gap:16px; margin-top:16px}
-    @media(min-width:900px){ .grid-2{ grid-template-columns:1fr 1fr } }
-    .card{background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px 18px}
-    .card h2{margin:0 0 8px 0; font-size:20px; position:relative}
-    .card h2::after{content:""; position:absolute; left:0; bottom:-6px; width:44px; height:3px; background:linear-gradient(90deg,var(--brand),rgba(197,163,73,0)); border-radius:2px}
-    .lead{color:var(--muted); margin:6px 0 0 0}
-
-    .list{display:grid; gap:8px; margin:10px 0 0 0; padding:0; list-style:none}
-    .li{border:1px solid #ece7d7; background:#fff; padding:10px 12px; border-radius:12px; box-shadow:var(--shadow-sm)}
-
-    .cta{margin-top:18px; background:linear-gradient(180deg,#fff,#fbfaf7); border:1px solid #e9e5d6; border-radius:14px; padding:18px; box-shadow:var(--shadow-sm)}
-    .cta h3{margin:0 0 6px 0; font-size:18px}
-    .cta p{margin:0 0 12px 0; color:var(--muted)}
-    .btn{display:inline-block; padding:10px 14px; border-radius:10px; font-size:14px; text-decoration:none; border:1px solid #d8c79a; background:var(--brand); color:#111; font-weight:700}
-    .btn-ghost{display:inline-block; padding:10px 14px; border-radius:10px; font-size:14px; text-decoration:none; border:1px solid #e5e7eb; background:#fff; color:var(--ink)}
-    .btn + .btn-ghost{margin-left:10px}
-
-    footer{margin-top:16px; color:var(--muted); font-size:12px}
-
-    @media print{
-      body{-webkit-print-color-adjust:exact; print-color-adjust:exact}
-      .container{max-width:none; padding:0.25in}
-      .card, .hero-card{box-shadow:none; border:1px solid #e5e7eb}
-      .btn, .btn-ghost{display:none}
-    }
+    body { font-family: system-ui, sans-serif; max-width: 850px; margin: auto; padding: 24px; line-height: 1.6; background:#fbfaf7; color:#1f2937; }
+    h1, h2, h3 { margin-top: 24px; }
+    .hero-img { width:100%; border-radius:14px; margin-top:16px; box-shadow:0 4px 14px rgba(0,0,0,.08); }
+    a { color:#1f2937; border-bottom:1px solid #d6c89c; text-decoration:none; }
+    .grid { display:grid; gap:14px; margin-top:12px; }
+    .card { background:#fff; border-radius:14px; padding:16px; box-shadow:0 5px 18px rgba(0,0,0,.06); }
   </style>
 </head>
 <body>
-  <header class="container">
-    <section class="hero" aria-label="Mukwonago Market Guide">
-      <div class="hero-card">
-        <span class="badge">Friendly • Helpful • Data‑savvy</span>
-        <h1>Mukwonago Market Guide</h1>
-        <p>What it’s like to live here: neighborhoods, schools, parks, coffee, golf, and the events locals actually attend. If you’re comparing options in Waukesha County, this gives you a clear, friendly starting point.</p>
-        <div class="cta" aria-labelledby="ctaTitle">
-          <h3 id="ctaTitle">Thinking about moving to Mukwonago?</h3>
-          <p>I’ll send you a tailored list of homes and a fresh RPR® market report for your price range.</p>
-          <a class="btn" href="mailto:joshwernerrealtor@gmail.com?subject=Mukwonago%20Market%20Guide%20-%20Custom%20Report&body=Hi%20Josh%2C%0A%0AWe%27re%20looking%20in%20Mukwonago.%20Price%20range%3A%20%5B%5D.%20Bedrooms%3A%20%5B%5D.%20Timing%3A%20%5B%5D.%0A%0AThanks!">Email Josh</a>
-          <a class="btn-ghost" href="tel:+14147597925">Call (414) 759-7925</a>
-        </div>
-      </div>
-      <figure class="hero-img" aria-hidden="true">
-        <!-- Replace src with your own sunrise/lake scene image. 1800×1200+ recommended. -->
-        <picture>
-          <img src="/images/mukwonago-hero.jpg" alt="A peaceful Mukwonago sunrise over water" loading="eager" />
-        </picture>
-        <figcaption class="credit">Photo: placeholder — replace with your image</figcaption>
-      </figure>
-    </section>
-  </header>
 
-  <main class="container">
-    <section class="grid-2">
-      <article class="card">
-        <h2>Home Styles & Neighborhoods</h2>
-        <p class="lead">From established streets to newer subdivisions, and even rural or lakeside options, there’s a fit for most lifestyles.</p>
-        <ul class="list" aria-label="Home styles list">
-          <li class="li">Established neighborhoods with mature trees and sidewalks</li>
-          <li class="li">Newer subdivisions with modern layouts</li>
-          <li class="li">Lakeside and rural properties offering privacy and space</li>
-          <li class="li">Condos and townhomes for low‑maintenance living</li>
-        </ul>
-      </article>
+<h1>Mukwonago Real Estate Market & Community Guide</h1>
+<p>Mukwonago is one of Southeast Wisconsin’s most welcoming small towns, known for its tight-knit community feel, great schools, walkable parks, and quick access to both Milwaukee and Lake Country. Whether you're moving here for family life, outdoor recreation, or the slower pace, this guide will help you understand the neighborhoods, local amenities, and current housing trends.</p>
 
-      <article class="card">
-        <h2>Schools</h2>
-        <p class="lead">Mukwonago School District is known for strong academics, CTE, music and athletics, with a supportive community feel.</p>
-        <ul class="list">
-          <li class="li">Consistent performance and community involvement</li>
-          <li class="li">Programs that support college and career pathways</li>
-          <li class="li">Families appreciate the balance of quality and value</li>
-        </ul>
-      </article>
+<img class="hero-img" src="https://i.imgur.com/ZvbjQdD.jpeg" alt="Mukwonago downtown and park" />
 
-      <article class="card">
-        <h2>Parks & Outdoor Life</h2>
-        <p class="lead">Plenty of reasons to get outside, all year long.</p>
-        <ul class="list">
-          <li class="li"><strong>Field Park</strong> — summer events, live music, weekly markets</li>
-          <li class="li"><strong>Fox River</strong> — kayaking, fishing, and scenic trails</li>
-          <li class="li">Nearby preserves and natural areas for hiking and birding</li>
-        </ul>
-      </article>
+<h2>Location & Lifestyle</h2>
+<div class="card">
+Mukwonago strikes a balance: close enough to commute into Milwaukee or Waukesha, but far enough to feel peaceful. Residents love the hometown atmosphere, strong school system, and easy access to lakes, hiking trails, golf, and community events year-round.
+</div>
 
-      <article class="card">
-        <h2>Local Coffee Shops</h2>
-        <p class="lead">Where conversations happen and caffeine does the heavy lifting.</p>
-        <ul class="list">
-          <li class="li"><strong>Espresso Love Coffee</strong> — cozy and consistently great</li>
-          <li class="li"><strong>Blue Lagoon</strong> — relaxed café for reading or remote work</li>
-          <li class="li"><strong>Brew 52</strong> — bright, friendly, with rotating specials</li>
-        </ul>
-      </article>
+<h2>Local Favorites</h2>
+<div class="grid">
+  <div class="card"><strong>Coffee:</strong> Expresso Love, Blue Lagoon, Brew 52</div>
+  <div class="card"><strong>Golf:</strong> Eagle Springs (9-hole classic), Broadlands, Morning Star</div>
+  <div class="card"><strong>Community Events:</strong> Field Park Markets, Wednesday Farmers Market, Maxwell Street Days</div>
+</div>
 
-      <article class="card">
-        <h2>Golf Courses</h2>
-        <p class="lead">Three local favorites, three different vibes.</p>
-        <ul class="list">
-          <li class="li"><strong>Eagle Springs Golf Resort</strong> — historic, quirky, perfect for a quick 9</li>
-          <li class="li"><strong>Broadlands Golf Club</strong> — beautiful layout, always well‑kept</li>
-          <li class="li"><strong>Morningstar Golfer’s Club</strong> — upscale and challenging</li>
-        </ul>
-      </article>
+<h2>Home Styles You’ll See</h2>
+<ul>
+  <li>Established subdivisions with mature trees</li>
+  <li>Newer developments with modern layouts</li>
+  <li>Lake homes and hobby farm properties nearby</li>
+</ul>
 
-      <article class="card">
-        <h2>Community Events</h2>
-        <p class="lead">The calendar highlights locals mark down early.</p>
-        <ul class="list">
-          <li class="li"><strong>Field Park Farmers Market</strong> — Wednesdays in summer: produce, baked goods, live music</li>
-          <li class="li"><strong>Maxwell Street Days</strong> — Saturday market with food, crafts, antiques and history</li>
-        </ul>
-      </article>
-    </section>
+<p><a href="/latest-waukesha-cnty-market-stats">View the latest Waukesha County market statistics</a></p>
 
-    <section class="cta" aria-labelledby="cta2">
-      <h3 id="cta2">Compare neighborhoods or get a custom report</h3>
-      <p>Tell me your must‑haves and I’ll send a curated list of homes plus a fresh RPR® report.</p>
-      <a class="btn" href="mailto:joshwernerrealtor@gmail.com?subject=Custom%20Mukwonago%20Report&body=Hi%20Josh%2C%0A%0AWe%27d%20like%20a%20custom%20Mukwonago%20report.%20Must‑haves%3A%20%5B%5D.%20Timing%3A%20%5B%5D.%0A%0AThanks!">Request by Email</a>
-      <a class="btn-ghost" href="tel:+14147597925">Call (414) 759-7925</a>
-    </section>
-  </main>
+<h2>Have Questions or Want a Custom Home Search?</h2>
+<p><a href="mailto:joshwernerrealtor@gmail.com">Email Josh</a> or call <a href="tel:+14147597925">(414) 759-7925</a>.</p>
 
-  <footer class="container">
-    <footer class="container">
-      <p>Prepared by Josh Werner, Licensed REALTOR® — Realty ONE Group Luminous. WI License #93792-94. This page is for informational purposes only and may reference third‑party sources such as RPR®.</p>
-    </footer>
-
-  <script>
-    // Optional: smooth scroll for any internal links and minimal niceties can go here later.
-  </script>
 </body>
 </html>
-
