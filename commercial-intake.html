@@ -247,7 +247,12 @@
           color: #000;
           border: none;
           cursor: pointer;
-        ">
+          transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+        "
+        onmouseover="this.style.backgroundColor='#c79a34'"
+        onmouseout="this.style.backgroundColor='#D9AA42'"
+        onmousedown="this.style.transform='translateY(1px)'"
+        onmouseup="this.style.transform='translateY(0)'">
           Submit Form
         </button>
       </div>
