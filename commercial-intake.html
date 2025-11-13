@@ -293,5 +293,16 @@
       }
     });
   </script>
+  <script>
+  // Send height to parent for auto-resize
+  window.addEventListener("load", () => {
+    const sendHeight = () => {
+      const h = document.body.scrollHeight;
+      window.parent.postMessage({ type: "resize-intake", height: h }, "*");
+    };
+    sendHeight();
+    window.addEventListener("resize", sendHeight);
+  });
+</script>
 </body>
 </html>
