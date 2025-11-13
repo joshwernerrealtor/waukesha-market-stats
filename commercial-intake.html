@@ -265,17 +265,18 @@
         </div>
       </fieldset>
 
-     <!-- Submit Button + Disclaimer -->
-<!-- Submit Button + Disclaimer (flush right fix) -->
-<div id="form-footer" style="
-  width: 100%;
+     <!-- Submit Button + Disclaimer (full-width alignment fix) -->
+<div style="
+  width: 100vw;                 /* full browser width */
   position: relative;
-  margin-top: 16px;
-  margin-bottom: 4px;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;           /* cancels page centering */
+  margin-right: -50vw;
+  padding: 0 5vw;               /* optional side padding for breathing room */
+  text-align: right;
 ">
   <button type="submit" style="
-    position: absolute;
-    right: 0;
     font-size: 14px;
     padding: 10px 16px;
     border-radius: 8px;
@@ -295,7 +296,7 @@
     Submit Form
   </button>
 
-  <footer style="margin-top: 60px; text-align: right;">
+  <footer style="margin-top: 10px; text-align: right;">
     <p class="disclaimer" style="
       font-size: 11px;
       color: #6b7280;
@@ -307,6 +308,7 @@
       Josh Werner | Realty ONE Group Luminous | Licensed Realtor®, Wisconsin
     </p>
   </footer>
+</div>
 </div>
 </div>
       <div id="success" class="success">Thanks — your Commercial Property Intake Form was sent successfully. I’ll follow up shortly.</div>
