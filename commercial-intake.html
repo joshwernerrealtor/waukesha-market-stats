@@ -264,7 +264,8 @@
     </form>
   </div>
 
-  <script>
+    <script>
+    // Handles form submission via Formspree
     const FORM_ENDPOINT = "https://formspree.io/f/xdkykjob";
     const form = document.getElementById('intakeForm');
     const ok = document.getElementById('success');
@@ -293,16 +294,17 @@
       }
     });
   </script>
+
   <script>
-  // Send height to parent for auto-resize
-  window.addEventListener("load", () => {
-    const sendHeight = () => {
-      const h = document.body.scrollHeight;
-      window.parent.postMessage({ type: "resize-intake", height: h }, "*");
-    };
-    sendHeight();
-    window.addEventListener("resize", sendHeight);
-  });
-</script>
+    // Send height to parent for auto-resize
+    window.addEventListener("load", () => {
+      const sendHeight = () => {
+        const h = document.body.scrollHeight;
+        window.parent.postMessage({ type: "resize-intake", height: h }, "*");
+      };
+      sendHeight();
+      window.addEventListener("resize", sendHeight);
+    });
+  </script>
 </body>
 </html>
