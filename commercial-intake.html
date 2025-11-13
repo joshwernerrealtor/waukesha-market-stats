@@ -141,6 +141,16 @@
 ::-webkit-scrollbar-track {
   background-color: #000; /* keep track consistent with brand */
 }
+/* Fade-in animation for the form */
+form {
+  opacity: 0;
+  animation: fadeIn 0.8s ease-in-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
   </style>
 </head>
 
