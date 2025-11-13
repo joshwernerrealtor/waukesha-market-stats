@@ -23,7 +23,7 @@
     .wrap {
       max-width: var(--maxw);
       margin: 0 auto;
-      padding: 16px 24px 48px; /* extra bottom padding to avoid clip */
+      padding: 16px 24px 48px;
     }
     form {
       display: grid;
@@ -76,7 +76,16 @@
       box-shadow: 0 0 0 3px rgba(0,0,0,.05);
     }
 
-    .actions { display: flex; gap: 12px; justify-content: flex-end; }
+    /* RIGHT-ALIGNED ACTIONS */
+    .actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      justify-self: end;   /* forces right alignment inside grid */
+      margin-top: 12px;
+      margin-bottom: 4px;
+    }
+
     button {
       appearance: none;
       border: none;
@@ -84,12 +93,20 @@
       color: var(--black);
       font-weight: 700;
       letter-spacing: .2px;
-      padding: 12px 18px;
-      border-radius: 10px;
+      padding: 10px 16px;
+      border-radius: 8px;
       cursor: pointer;
-      transition: transform .05s ease-in-out;
+      transition: background-color 0.2s ease-in-out,
+                  box-shadow 0.2s ease-in-out,
+                  transform 0.1s ease-in-out;
     }
-    button:active { transform: translateY(1px); }
+    button:hover {
+      background-color: #c79a34;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    }
+    button:active {
+      transform: translateY(1px);
+    }
 
     .success, .error {
       border: 1px solid;
@@ -101,8 +118,16 @@
     .success { border-color: #16a34a; color: #166534; background: #ecfdf5; animation: successFade 0.6s ease-out; }
     .error { border-color: #dc2626; color: #7f1d1d; background: #fef2f2; animation: errorShake 0.3s ease-in-out; }
 
-    footer { text-align: center; margin-top: 16px; }
-    .disclaimer { color: var(--muted); font-size: 12px; line-height: 1.3; }
+    footer {
+      text-align: right;
+      margin-top: 10px;
+    }
+    .disclaimer {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.3;
+      margin: 0;
+    }
 
     /* Fade in form */
     form { opacity: 0; animation: fadeIn 0.8s ease-in-out forwards; }
@@ -119,6 +144,8 @@
     @media (max-width: 720px) {
       .col-6, .col-4, .col-3 { grid-column: span 12; }
       fieldset { margin-bottom: 36px; }
+      .actions { justify-content: center; text-align: center; } /* centers on mobile */
+      footer { text-align: center; }
     }
   </style>
 </head>
@@ -237,38 +264,21 @@
           </div>
         </div>
       </fieldset>
-<!-- Submit Button + Disclaimer -->
-<div class="actions" style="margin-top: 12px; margin-bottom: 4px;">
-  <button type="submit" style="
-    font-size: 14px;
-    padding: 10px 16px;
-    border-radius: 8px;
-    font-weight: 600;
-    background: #D9AA42;
-    color: #000;
-    border: none;
-    cursor: pointer;
-    transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out, transform 0.1s ease-in-out;
-  "
-  onmouseover="this.style.backgroundColor='#c79a34'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.25)'"
-  onmouseout="this.style.backgroundColor='#D9AA42'; this.style.boxShadow='none'"
-  onmousedown="this.style.transform='translateY(1px)'"
-  onmouseup="this.style.transform='translateY(0)'">
-    Submit Form
-  </button>
-</div>
 
-<footer style="margin-top: 10px; text-align: right;">
-  <p class="disclaimer" style="
-    font-size: 11px;
-    color: #6b7280;
-    line-height: 1.3;
-    margin: 0;
-  ">
-    This form is for informational purposes only and does not constitute a formal listing agreement.<br>
-    Josh Werner | Realty ONE Group Luminous | Licensed Realtor®, Wisconsin
-  </p>
-</footer>
+      <!-- Submit Button + Disclaimer -->
+      <div class="actions">
+        <button type="submit">Submit Form</button>
+      </div>
+
+      <footer>
+        <p class="disclaimer">
+          This form is for informational purposes only and does not constitute a formal listing agreement.<br>
+          Josh Werner | Realty ONE Group Luminous | Licensed Realtor®, Wisconsin
+        </p>
+      </footer>
+
+      <div id="success" class="success">Thanks — your Commercial Property Intake Form was sent successfully. I’ll follow up shortly.</div>
+      <div id="error" class="error">Something went wrong sending your form. Please try again or email me directly.</div>
     </form>
   </div>
 
@@ -295,7 +305,6 @@
           form.reset();
           window.scrollTo({ top: 0, behavior: 'smooth' });
           if (window.parent) {
-            // inform parent to resize after success message appears
             window.parent.postMessage({ type: "resize-intake", height: document.body.scrollHeight }, "*");
           }
         } else {
@@ -307,7 +316,7 @@
     });
   </script>
 
-  <!-- Auto-resize: post height to parent (with ResizeObserver for dynamic changes) -->
+  <!-- Auto-resize observer -->
   <script>
     function sendHeight() {
       const h = document.body.scrollHeight;
@@ -315,13 +324,10 @@
     }
     window.addEventListener("load", sendHeight);
     window.addEventListener("resize", sendHeight);
-
-    // Observe content changes (fonts load, mobile UI, toggles, etc.)
     try {
       const ro = new ResizeObserver(sendHeight);
       ro.observe(document.body);
     } catch(e) {
-      // Fallback if ResizeObserver not supported
       setInterval(sendHeight, 800);
     }
   </script>
