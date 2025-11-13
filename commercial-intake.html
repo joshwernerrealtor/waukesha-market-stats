@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Commercial Property Intake Form</title>
+
+  <!-- Poppins font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --black: #000;
+      --gold: #D9AA42;
+      --ink: #111;
+      --muted: #6b7280;
+      --line: #d1d5db;
+      --field: #f9fafb;
+      --focus: #9ca3af;
+      --maxw: 960px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Poppins", system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      color: var(--ink);
+      background: #fff;
+    }
+    .wrap {
+      max-width: var(--maxw);
+      margin: 0 auto;
+      padding: 24px;
+    }
+    form {
+      display: grid;
+      gap: 32px;
+      margin-top: 0; /* no top margin */
+    }
+    fieldset {
+      border: 2px solid var(--line); /* thicker border */
+      border-radius: 10px;
+      padding: 20px 18px 16px;
+      background: #fff;
+      margin-bottom: 48px; /* space between sections */
+      margin-top: 0; /* remove top margin */
+    }
+    legend {
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--gold);
+      padding: 0 8px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+
+    .grid { display: grid; gap: 12px; grid-template-columns: repeat(12, 1fr); }
+    .col-12 { grid-column: span 12; }
+    .col-6 { grid-column: span 6; }
+    .col-4 { grid-column: span 4; }
+    .col-3 { grid-column: span 3; }
+
+    label {
+      font-size: 14px;
+      display: block;
+      margin-bottom: 6px;
+      color: var(--ink);
+    }
+    input[type="text"], input[type="number"], input[type="date"],
+    input[type="email"], textarea, select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--field);
+      font-size: 14px;
+      line-height: 1.3;
+      color: var(--ink);
+      outline: none;
+    }
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--focus);
+      box-shadow: 0 0 0 3px rgba(0,0,0,.05);
+    }
+
+    .checks { display: flex; flex-wrap: wrap; gap: 12px 18px; }
+    .check { display: inline-flex; align-items: center; gap: 8px; }
+    .check input { width: 18px; height: 18px; accent-color: var(--gold); }
+
+    .note-lines { display: grid; gap: 8px; }
+    .note-lines .line { height: 38px; border-bottom: 1px solid var(--line); }
+
+    .muted { color: var(--muted); font-size: 12px; }
+
+    .actions { display: flex; gap: 12px; justify-content: flex-end; }
+    button {
+      appearance: none;
+      border: none;
+      background: var(--gold);
+      color: var(--black);
+      font-weight: 700;
+      letter-spacing: .2px;
+      padding: 12px 18px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform .05s ease-in-out;
+    }
+    button:active { transform: translateY(1px); }
+
+    .success, .error {
+      border: 1px solid;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 14px;
+      display: none;
+    }
+    .success { border-color: #16a34a; color: #166534; background: #ecfdf5; }
+    .error { border-color: #dc2626; color: #7f1d1d; background: #fef2f2; }
+
+    footer { text-align: center; margin-top: 16px; }
+    .disclaimer { color: var(--muted); font-size: 12px; line-height: 1.3; }
+
+    @media (max-width: 720px) {
+      .col-6, .col-4, .col-3 { grid-column: span 12; }
+      fieldset { margin-bottom: 36px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <form id="intakeForm" class="grid" autocomplete="on">
+      <input type="hidden" name="form_name" value="Commercial Property Intake" />
+
+      <!-- PROPERTY INFORMATION -->
+      <fieldset class="col-12">
+        <legend>Property Information</legend>
+        <div class="grid">
+          <div class="col-12">
+            <label for="address">Property Address</label>
+            <input id="address" name="address" type="text" required />
+          </div>
+          <div class="col-6">
+            <label for="cityzip">City / ZIP</label>
+            <input id="cityzip" name="cityzip" type="text" />
+          </div>
+          <div class="col-6">
+            <label for="parcel">Parcel Number</label>
+            <input id="parcel" name="parcel" type="text" />
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- BUILDING FEATURES -->
+      <fieldset class="col-12">
+        <legend>Building Features</legend>
+        <div class="grid">
+          <div class="col-12">
+            <label for="bldg_sqft">Building Sq Ft</label>
+            <input id="bldg_sqft" name="bldg_sqft" type="number" inputmode="numeric" />
+          </div>
+          <div class="col-12">
+            <label for="lot_size">Lot Size</label>
+            <input id="lot_size" name="lot_size" type="text" />
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- CURRENT OCCUPANCY & INCOME -->
+      <fieldset class="col-12">
+        <legend>Current Occupancy & Income</legend>
+        <div class="grid">
+          <div class="col-12">
+            <label for="tenants">Tenant Name(s)</label>
+            <input id="tenants" name="tenants" type="text" />
+          </div>
+          <div class="col-6">
+            <label for="lease_start">Lease Start</label>
+            <input id="lease_start" name="lease_start" type="date" />
+          </div>
+          <div class="col-6">
+            <label for="lease_end">Lease End</label>
+            <input id="lease_end" name="lease_end" type="date" />
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- PROPERTY CONDITION -->
+      <fieldset class="col-12">
+        <legend>Property Condition</legend>
+        <div class="grid">
+          <div class="col-12">
+            <label for="improvements">Major Improvements (Description & Year)</label>
+            <textarea id="improvements" name="improvements" rows="3"></textarea>
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- OWNERSHIP & MOTIVATION -->
+      <fieldset class="col-12">
+        <legend>Ownership & Motivation</legend>
+        <div class="grid">
+          <div class="col-6">
+            <label for="owned_since">Owned Since</label>
+            <input id="owned_since" name="owned_since" type="number" />
+          </div>
+          <div class="col-6">
+            <label for="purchase_price">Purchase Price ($)</label>
+            <input id="purchase_price" name="purchase_price" type="number" />
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- AGENT NOTES -->
+      <fieldset class="col-12">
+        <legend>Agent Notes</legend>
+        <div class="note-lines">
+          <div class="line"></div>
+          <div class="line"></div>
+          <div class="line"></div>
+        </div>
+      </fieldset>
+
+      <!-- SELLER ACKNOWLEDGMENT -->
+      <fieldset class="col-12">
+        <legend>Seller Acknowledgment</legend>
+        <p class="muted">I certify that the information provided above is accurate to the best of my knowledge.</p>
+        <div class="grid">
+          <div class="col-6">
+            <label for="signature">Typed Name (Signature)</label>
+            <input id="signature" name="signature" type="text" />
+          </div>
+          <div class="col-6">
+            <label for="sig_date">Date</label>
+            <input id="sig_date" name="sig_date" type="date" />
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- CONTACT INFO -->
+      <fieldset class="col-12">
+        <legend>Where Should We Send a Copy?</legend>
+        <div class="grid">
+          <div class="col-6">
+            <label for="contact_name">Your Name</label>
+            <input id="contact_name" name="contact_name" type="text" />
+          </div>
+          <div class="col-6">
+            <label for="contact_email">Your Email</label>
+            <input id="contact_email" name="contact_email" type="email" />
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="col-12 actions">
+        <button type="submit">Submit Form</button>
+      </div>
+
+      <div id="success" class="success col-12">Thanks — your Commercial Property Intake Form was sent successfully. I’ll follow up shortly.</div>
+      <div id="error" class="error col-12">Something went wrong sending your form. Please try again or email me directly.</div>
+
+      <footer class="col-12">
+        <p class="disclaimer">This form is for informational and marketing preparation purposes only and does not constitute a formal listing agreement. Josh Werner | Realty ONE Group Luminous | Licensed Realtor®, State of Wisconsin.</p>
+      </footer>
+    </form>
+  </div>
+
+  <script>
+    const FORM_ENDPOINT = "https://formspree.io/f/xdkykjob";
+    const form = document.getElementById('intakeForm');
+    const ok = document.getElementById('success');
+    const err = document.getElementById('error');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      ok.style.display = 'none';
+      err.style.display = 'none';
+      const data = new FormData(form);
+      try {
+        const res = await fetch(FORM_ENDPOINT, {
+          method: 'POST',
+          body: data,
+          headers: { 'Accept': 'application/json' }
+        });
+        if (res.ok) {
+          ok.style.display = 'block';
+          form.reset();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          err.style.display = 'block';
+        }
+      } catch (e) {
+        err.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>
