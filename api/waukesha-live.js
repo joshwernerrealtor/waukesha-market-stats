@@ -48,7 +48,7 @@ export default async function handler(req, res) {
     const trimmed = Object.keys(months).sort().reverse().slice(0, 6)
       .reduce((acc, k) => (acc[k] = months[k], acc), {});
 
-    if (!updatedAt) {
+    if (!updatedAt && process.env.WAU_UPDATED_AT && /^\d{4}-\d{2}-\d{2}$/.test(process.env.WAU_UPDATED_AT)) {
       const [yy, mm] = key.split("-").map(Number);
       updatedAt = ymd(new Date(yy, mm - 1, 1));
     }
@@ -122,7 +122,7 @@ function titleCase(s){ return s.replace(/\w\S*/g, t => t[0].toUpperCase()+t.slic
 function parseRprStats(txt){
   if (!txt) return emptyStats();
   const lines = txt split(/\n/).map(s => s.trim()).filter(Boolean);
-  const firstInt   = s => { const m = String(s||"").match(/-?\d{1,3}(?:,\d{3})*|\d+/); return m ? parseInt(m[0].replace(/,/g,""),10) : null; };
+  const firstInt = s => { const m = String(s||"").match(/-?\d{1,3}(?:,\d{3})*|\d+/); ...
   const firstFloat = s => { const m = String(s||"").match(/-?\d+(?:\.\d+)?/);         return m ? parseFloat(m[0]) : null; };
   const pctOrMoM   = /%|MoM/i;
   function pickNumberAround(idx, asFloat = false, lookAhead = 3){
