@@ -4,7 +4,7 @@
 // dropdown keeps prior months while the newest month rolls in.
 // Cache: 5 min. Requires pdf-parse. Not Edge.
 
-import pdfParse from "pdf-parse";
+const pdfParse = require("pdf-parse");
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=3600");
