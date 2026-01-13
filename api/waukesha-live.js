@@ -29,13 +29,7 @@ export default async function handler(req, res) {
     const sfStats    = parseRprStats(sfText);
     const condoStats = parseRprStats(condoText);
 
-    // Merge with existing stub so dropdown keeps older months
-    const origin  = getOrigin(req) || "http://localhost:3000";
-    const stubUrl = new URL("/api/waukesha?ts=" + Date.now(), origin).toString();
-    const existing = await fetch(stubUrl, { cache: "no-store" }).then(r => r.ok ? r.json() : null).catch(() => null);
-
     let months = {};
-    if (existing?.months && typeof existing.months === "object") months = { ...existing.months };
 
     months[key] = {
       sf: sfStats,
