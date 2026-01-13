@@ -1,8 +1,8 @@
 // api/waukesha.js
 // Stub months + live newest month merged at request time
 
-export default async function handler(req, res) {
-  // IMPORTANT: avoid caching while we debug. You can re-enable caching later.
+module.exports = async function handler(req, res) {
+  // Avoid caching while validating; you can re-enable later once confirmed.
   res.setHeader("Cache-Control", "no-store");
 
   const months = {
@@ -27,24 +27,25 @@ export default async function handler(req, res) {
   };
 
   try {
-    // Build the correct origin on Vercel
+    // Build origin reliably on Vercel
     const proto = (req.headers["x-forwarded-proto"] || "https").toString().split(",")[0];
     const host = req.headers.host;
     const origin = `${proto}://${host}`;
 
-    // Pull live month from the parser
+    // Fetch live newest month
     const liveUrl = `${origin}/api/waukesha-live?ts=${Date.now()}`;
     const live = await fetch(liveUrl, { cache: "no-store" }).then(r => r.json());
 
     if (live?.months && typeof live.months === "object") {
-      // Merge: live overwrites same month key if present
+      // Merge: live overwrites month key if it matches a stub key
       Object.assign(months, live.months);
     }
 
-    const keys = Object.keys(months).sort(); // YYYY-MM sorts correctly
+    // Compute latest month key from merged keys (YYYY-MM sorts correctly)
+    const keys = Object.keys(months).sort();
     const latestKey = keys.length ? keys[keys.length - 1] : null;
 
-    // Prefer the live updatedAt if present; fall back to the stub date
+    // Prefer live updatedAt; fallback to previous stub date
     const updatedAt = live?.updatedAt || "2025-10-31";
 
     return res.status(200).json({
@@ -53,7 +54,7 @@ export default async function handler(req, res) {
       months
     });
   } catch (err) {
-    // If live fetch fails, still return stub so site doesn’t break
+    // If live fetch fails, still return stub so site doesn't break
     const latestKey = Object.keys(months).sort().pop();
     return res.status(200).json({
       updatedAt: "2025-10-31",
@@ -62,4 +63,4 @@ export default async function handler(req, res) {
       liveError: String(err)
     });
   }
-}
+};
