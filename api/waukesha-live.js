@@ -6,7 +6,7 @@
 
 const pdfParse = require("pdf-parse");
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=3600");
 
   const SF_URL    = "https://www.narrpr.com/reports-v2/c296fac6-035d-4e9a-84fd-28455ab0339f/pdf";
