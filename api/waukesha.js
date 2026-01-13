@@ -3,7 +3,7 @@
 
 module.exports = async function handler(req, res) {
   // Avoid caching while validating; you can re-enable later once confirmed.
-  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("Cache-Control", "s-maxage=900, stale-while-revalidate=3600");
 
   const months = {
     "2025-08": {
