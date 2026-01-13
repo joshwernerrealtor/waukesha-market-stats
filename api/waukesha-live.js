@@ -112,15 +112,29 @@ function ymd(d){
 }
 function titleCase(s){ return s.replace(/\w\S*/g, t => t[0].toUpperCase()+t.slice(1).toLowerCase()); }
 
-// Parser (same logic you had)
 function parseRprStats(txt){
   if (!txt) return emptyStats();
-  const lines = txt split(/\n/).map(s => s.trim()).filter(Boolean);
-  const firstInt = s => { const m = String(s||"").match(/-?\d{1,3}(?:,\d{3})*|\d+/); ...
-  const firstFloat = s => { const m = String(s||"").match(/-?\d+(?:\.\d+)?/);         return m ? parseFloat(m[0]) : null; };
-  const pctOrMoM   = /%|MoM/i;
-  function pickNumberAround(idx, asFloat = false, lookAhead = 3){
-    for (let i = idx; i <= Math.min(idx + lookAhead, lines.length - 1); i++){
+
+  const lines = String(txt)
+    .split(/\n/)
+    .map(s => String(s || "").trim())
+    .filter(Boolean);
+
+  const firstInt = (s) => {
+    const m = String(s || "").match(/-?\d{1,3}(?:,\d{3})*|-?\d+/);
+    if (!m) return null;
+    return parseInt(m[0].replace(/,/g, ""), 10);
+  };
+
+  const firstFloat = (s) => {
+    const m = String(s || "").match(/-?\d+(?:\.\d+)?/);
+    return m ? parseFloat(m[0]) : null;
+  };
+
+  const pctOrMoM = /%|MoM/i;
+
+  function findNextNumber(startIdx, { asFloat = false, maxAhead = 8 } = {}) {
+    for (let i = startIdx; i < Math.min(lines.length, startIdx + maxAhead); i++) {
       const ln = lines[i];
       if (pctOrMoM.test(ln)) continue;
       const n = asFloat ? firstFloat(ln) : firstInt(ln);
@@ -128,6 +142,51 @@ function parseRprStats(txt){
     }
     return null;
   }
+
+  const out = { medianPrice: null, closed: null, dom: null, monthsSupply: null, activeListings: null };
+
+  const reMedianPrice = /median\s+(sold\s+)?price/i;
+  const reClosed      = /(closed\s+sales|sold\s+listings|total\s+sales|closed\s+listings)/i;
+  const reDom         = /(median\s+days\s+(in\s+rpr|on\s+market)|days\s+on\s+market)/i;
+  const reMonths      = /(months\s+of\s+inventory|months\s+(of\s+)?supply)/i;
+  const reActive      = /(^|\s)active\s+(listings|residential\s+listings)(\s|$)/i;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (out.medianPrice == null && reMedianPrice.test(line)) {
+      const n = firstInt(line) ?? findNextNumber(i + 1, { asFloat: false, maxAhead: 5 });
+      if (Number.isFinite(n) && n >= 20000 && n <= 2000000) out.medianPrice = n;
+      continue;
+    }
+
+    if (out.closed == null && reClosed.test(line)) {
+      const n = findNextNumber(i + 1, { asFloat: false, maxAhead: 10 });
+      if (Number.isFinite(n) && n >= 0 && n < 10000) out.closed = n;
+      continue;
+    }
+
+    if (out.dom == null && reDom.test(line)) {
+      const n = firstInt(line) ?? findNextNumber(i + 1, { asFloat: false, maxAhead: 6 });
+      if (Number.isFinite(n) && n >= 0 && n <= 365) out.dom = n;
+      continue;
+    }
+
+    if (out.monthsSupply == null && reMonths.test(line)) {
+      const n = firstFloat(line) ?? findNextNumber(i + 1, { asFloat: true, maxAhead: 6 });
+      if (Number.isFinite(n) && n >= 0 && n < 50) out.monthsSupply = Math.round(n * 10) / 10;
+      continue;
+    }
+
+    if (out.activeListings == null && reActive.test(line)) {
+      const n = findNextNumber(i + 1, { asFloat: false, maxAhead: 10 });
+      if (Number.isFinite(n) && n >= 0 && n < 50000) out.activeListings = n;
+      continue;
+    }
+  }
+
+  return out;
+}
   const monthRegex = /\b(January|February|March|April|May|June|July|August|September|October|November|December)\b/i;
   const yearRegex  = /\b20\d{2}\b/;
   const sane = {
