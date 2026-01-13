@@ -1,6 +1,6 @@
 {
   "crons": [
-    { "path": "/api/refresh-waukesha?secret=josh-refresh-2026-01", "schedule": "0 11 * * *" }
+    { "path": "/api/waukesha", "schedule": "0 11 * * *" }
   ],
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" }
