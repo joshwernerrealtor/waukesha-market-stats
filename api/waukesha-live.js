@@ -148,6 +148,29 @@ function titleCase(s) {
   return String(s || "").replace(/\w\S*/g, (t) => t[0].toUpperCase() + t.slice(1).toLowerCase());
 }
 
+function extractSectionCount(txt, headingRegex) {
+  const text = String(txt || "").replace(/\r/g, "");
+  const headingMatch = text.match(headingRegex);
+  if (!headingMatch || headingMatch.index == null) return null;
+
+  // Look only at the chunk after the heading so we don't grab the wrong count
+  const chunk = text.slice(headingMatch.index, headingMatch.index + 1200);
+
+  // Preferred pattern in RPR PDFs:
+  // "# of Properties - 473"
+  const direct = chunk.match(/#\s*of\s*Properties\s*-\s*([\d,]+)/i);
+  if (direct) return parseInt(direct[1].replace(/,/g, ""), 10);
+
+  return null;
+}
+
+function extractClosedAndActiveCounts(txt) {
+  return {
+    closed: extractSectionCount(txt, /Sold Listings/i),
+    activeListings: extractSectionCount(txt, /Active Listings/i)
+  };
+}
+
 // Robust, simple parser: find values near label lines
 function parseRprStats(txt) {
   if (!txt) return emptyStats();
@@ -181,6 +204,16 @@ function parseRprStats(txt) {
   }
 
   const out = emptyStats();
+  // Use section-based extraction first (more reliable than scanning)
+const sectionCounts = extractClosedAndActiveCounts(txt);
+
+if (sectionCounts.closed != null) {
+  out.closed = sectionCounts.closed;
+}
+
+if (sectionCounts.activeListings != null) {
+  out.activeListings = sectionCounts.activeListings;
+}
 
   const reMedianPrice = /median\s+(sold\s+)?price/i;
   const reClosed = /(closed\s+sales|sold\s+listings|total\s+sales|closed\s+listings)/i;
