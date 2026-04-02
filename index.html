@@ -466,36 +466,65 @@ const communityGrid = $("#communityGrid");
       ];
 
       // Formatters
-      const fCurrency = v => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v);
-      const fNumber = v => new Intl.NumberFormat("en-US").format(v);
-      const fNumber1 = v => new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format(v);
+const fCurrency = v => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v);
+const fNumber = v => new Intl.NumberFormat("en-US").format(v);
+const fNumber1 = v => new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format(v);
 
-      function kpiEl(label, value, prev, type) {
-        const el = document.createElement("div");
-        el.className = "kpi";
-        const ok = typeof value === "number" && !Number.isNaN(value);
-        const havePrev = typeof prev === "number" && !Number.isNaN(prev);
+function kpiEl(label, value, prev, type) {
+  const el = document.createElement("div");
+  el.className = "kpi";
+  const ok = typeof value === "number" && !Number.isNaN(value);
+  const havePrev = typeof prev === "number" && !Number.isNaN(prev);
 
-        let txt = "—";
-        if (ok) {
-          txt = type === "currency" ? fCurrency(value)
-            : type === "number1" ? fNumber1(value)
-            : fNumber(value);
-        }
+  let txt = "—";
+  if (ok) {
+    txt = type === "currency" ? fCurrency(value)
+      : type === "number1" ? fNumber1(value)
+      : fNumber(value);
+  }
 
-        let delta = "";
-        if (ok && havePrev) {
-          const diff = value - prev;
-          const dir = diff === 0 ? 0 : (diff > 0 ? 1 : -1);
-          const pct = prev === 0 ? 0 : (diff / prev) * 100;
-          const arrow = dir === 0 ? "—" : (dir > 0 ? "▲" : "▼");
-          const cls = dir === 0 ? "" : (dir > 0 ? "up" : "down");
-          delta = `<div class="delta ${cls}">${arrow} ${Math.abs(pct).toFixed(1)}% MoM</div>`;
-        }
+  let delta = "";
+  if (ok && havePrev) {
+    const diff = value - prev;
+    const dir = diff === 0 ? 0 : (diff > 0 ? 1 : -1);
+    const pct = prev === 0 ? 0 : (diff / prev) * 100;
+    const arrow = dir === 0 ? "—" : (dir > 0 ? "▲" : "▼");
+    const cls = dir === 0 ? "" : (dir > 0 ? "up" : "down");
+    delta = `<div class="delta ${cls}">${arrow} ${Math.abs(pct).toFixed(1)}% MoM</div>`;
+  }
 
-        el.innerHTML = `<div class="label">${label}</div><div class="value">${txt}</div>${delta}`;
-        return el;
-      }
+  el.innerHTML = `<div class="label">${label}</div><div class="value">${txt}</div>${delta}`;
+  return el;
+}
+
+/* ===== NEW CHART PLACEHOLDER FUNCTION ===== */
+function renderEmptyChart(el, title) {
+  if (!el) return;
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:700;color:var(--ink)">${title}</div>
+      <div style="font-size:12px;color:var(--muted)">Last 4 months</div>
+    </div>
+
+    <svg viewBox="0 0 420 140" width="100%" height="140" aria-hidden="true">
+      <!-- axes -->
+      <line x1="36" y1="16" x2="36" y2="112" stroke="#d1d5db" stroke-width="1"/>
+      <line x1="36" y1="112" x2="404" y2="112" stroke="#d1d5db" stroke-width="1"/>
+
+      <!-- grid lines -->
+      <line x1="36" y1="32" x2="404" y2="32" stroke="#f3f4f6" stroke-width="1"/>
+      <line x1="36" y1="56" x2="404" y2="56" stroke="#f3f4f6" stroke-width="1"/>
+      <line x1="36" y1="80" x2="404" y2="80" stroke="#f3f4f6" stroke-width="1"/>
+
+      <!-- placeholder labels -->
+      <text x="72" y="128" font-size="11" fill="#9ca3af">M1</text>
+      <text x="164" y="128" font-size="11" fill="#9ca3af">M2</text>
+      <text x="256" y="128" font-size="11" fill="#9ca3af">M3</text>
+      <text x="348" y="128" font-size="11" fill="#9ca3af">M4</text>
+    </svg>
+  `;
+}
 
       function paintMonth(key, payload) {
         if (!payload?.months) return;
