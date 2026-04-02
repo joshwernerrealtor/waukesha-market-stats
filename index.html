@@ -590,7 +590,10 @@ function renderChart(el, title, data, labels) {
 const sfData = last4.map(m => payload.months[m]?.sf?.medianPrice || 0);
 const condoData = last4.map(m => payload.months[m]?.condo?.medianPrice || 0);
 
-const labels = last4.map(m => m.split("-")[1]);
+const labels = last4.map(m => {
+  const [yy, mm] = m.split("-");
+  return new Date(+yy, +mm - 1, 1).toLocaleDateString(undefined, { month: "short" });
+});
 
 renderChart(sfChart, "Median Price Trend", sfData, labels);
 renderChart(condoChart, "Median Price Trend", condoData, labels);
