@@ -623,16 +623,49 @@ function renderChart(el, title, data, labels) {
         
          const last4 = months.slice(-4);
 
-const sfData = last4.map(m => payload.months[m]?.sf?.medianPrice || 0);
-const condoData = last4.map(m => payload.months[m]?.condo?.medianPrice || 0);
-
 const labels = last4.map(m => {
   const [yy, mm] = m.split("-");
   return new Date(+yy, +mm - 1, 1).toLocaleDateString(undefined, { month: "short" });
 });
 
-renderChart(sfChart, "Median Price Trend", sfData, labels);
-renderChart(condoChart, "Median Price Trend", condoData, labels);
+const datasets = {
+  price: {
+    title: "Median Price Trend",
+    sf: last4.map(m => payload.months[m]?.sf?.medianPrice || 0),
+    condo: last4.map(m => payload.months[m]?.condo?.medianPrice || 0)
+  },
+  sales: {
+    title: "Closed Sales Trend",
+    sf: last4.map(m => payload.months[m]?.sf?.closed || 0),
+    condo: last4.map(m => payload.months[m]?.condo?.closed || 0)
+  },
+  supply: {
+    title: "Months Supply Trend",
+    sf: last4.map(m => payload.months[m]?.sf?.monthsSupply || 0),
+    condo: last4.map(m => payload.months[m]?.condo?.monthsSupply || 0)
+  }
+};
+
+renderChart(sfChart, datasets.price.title, datasets.price.sf, labels);
+renderChart(condoChart, datasets.price.title, datasets.price.condo, labels);
+
+document.querySelectorAll('#sf .chart-toggle').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('#sf .chart-toggle').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const type = btn.dataset.type;
+    renderChart(sfChart, datasets[type].title, datasets[type].sf, labels);
+  };
+});
+
+document.querySelectorAll('#condo .chart-toggle').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('#condo .chart-toggle').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const type = btn.dataset.type;
+    renderChart(condoChart, datasets[type].title, datasets[type].condo, labels);
+  };
+});
         
         if (printUpdated && payload?.updatedAt) {
           try { printUpdated.textContent = "Updated " + new Date(payload.updatedAt).toLocaleDateString(); } catch {}
