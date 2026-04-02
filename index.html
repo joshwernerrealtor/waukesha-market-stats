@@ -498,30 +498,59 @@ function kpiEl(label, value, prev, type) {
 }
 
 /* ===== NEW CHART PLACEHOLDER FUNCTION ===== */
-function renderEmptyChart(el, title) {
+function renderChart(el, title, data, labels) {
   if (!el) return;
+
+  const width = 420;
+  const height = 140;
+  const padding = 36;
+
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+
+  const xStep = (width - padding * 2) / (data.length - 1 || 1);
+
+  const points = data.map((v, i) => {
+    const x = padding + i * xStep;
+    const y =
+      padding +
+      (height - padding * 2) * (1 - (v - min) / (max - min || 1));
+    return [x, y];
+  });
+
+  const path = points
+    .map((p, i) => (i === 0 ? "M" : "L") + p[0] + "," + p[1])
+    .join(" ");
 
   el.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px">
       <div style="font-size:13px;font-weight:700;color:var(--ink)">${title}</div>
-      <div style="font-size:12px;color:var(--muted)">Last 4 months</div>
+      <div style="font-size:12px;color:var(--muted)">Last ${data.length} months</div>
     </div>
 
-    <svg viewBox="0 0 420 140" width="100%" height="140" aria-hidden="true">
+    <svg viewBox="0 0 ${width} ${height}" width="100%" height="${height}">
       <!-- axes -->
-      <line x1="36" y1="16" x2="36" y2="112" stroke="#d1d5db" stroke-width="1"/>
-      <line x1="36" y1="112" x2="404" y2="112" stroke="#d1d5db" stroke-width="1"/>
+      <line x1="${padding}" y1="${padding}" x2="${padding}" y2="${height - padding}" stroke="#d1d5db"/>
+      <line x1="${padding}" y1="${height - padding}" x2="${width - padding}" y2="${height - padding}" stroke="#d1d5db"/>
 
-      <!-- grid lines -->
-      <line x1="36" y1="32" x2="404" y2="32" stroke="#f3f4f6" stroke-width="1"/>
-      <line x1="36" y1="56" x2="404" y2="56" stroke="#f3f4f6" stroke-width="1"/>
-      <line x1="36" y1="80" x2="404" y2="80" stroke="#f3f4f6" stroke-width="1"/>
+      <!-- line -->
+      <path d="${path}" fill="none" stroke="#C5A349" stroke-width="3"/>
 
-      <!-- placeholder labels -->
-      <text x="72" y="128" font-size="11" fill="#9ca3af">M1</text>
-      <text x="164" y="128" font-size="11" fill="#9ca3af">M2</text>
-      <text x="256" y="128" font-size="11" fill="#9ca3af">M3</text>
-      <text x="348" y="128" font-size="11" fill="#9ca3af">M4</text>
+      <!-- points -->
+      ${points
+        .map(
+          (p) =>
+            `<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="#C5A349"/>`
+        )
+        .join("")}
+
+      <!-- labels -->
+      ${labels
+        .map((l, i) => {
+          const x = padding + i * xStep;
+          return `<text x="${x}" y="${height - 8}" font-size="11" text-anchor="middle" fill="#9ca3af">${l}</text>`;
+        })
+        .join("")}
     </svg>
   `;
 }
@@ -556,8 +585,16 @@ function renderEmptyChart(el, title) {
         if (sfReport && cur?.sfReport) sfReport.href = cur.sfReport;
         if (condoReport && cur?.condoReport) condoReport.href = cur.condoReport;
         
-         renderEmptyChart(sfChart, "Median Price Trend");
-         renderEmptyChart(condoChart, "Median Price Trend");
+         const months = Object.keys(payload.months).sort();
+         const last4 = months.slice(-4);
+
+         const sfData = last4.map(m => payload.months[m]?.sf?.medianPrice || 0);
+         const condoData = last4.map(m => payload.months[m]?.condo?.medianPrice || 0);
+
+         const labels = last4.map(m => m.split("-")[1]);
+
+         renderChart(sfChart, "Median Price Trend", sfData, labels);
+         renderChart(condoChart, "Median Price Trend", condoData, labels);
         
         if (printUpdated && payload?.updatedAt) {
           try { printUpdated.textContent = "Updated " + new Date(payload.updatedAt).toLocaleDateString(); } catch {}
