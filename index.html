@@ -585,16 +585,15 @@ function renderChart(el, title, data, labels) {
         if (sfReport && cur?.sfReport) sfReport.href = cur.sfReport;
         if (condoReport && cur?.condoReport) condoReport.href = cur.condoReport;
         
-         const months = Object.keys(payload.months).sort();
          const last4 = months.slice(-4);
 
-         const sfData = last4.map(m => payload.months[m]?.sf?.medianPrice || 0);
-         const condoData = last4.map(m => payload.months[m]?.condo?.medianPrice || 0);
+const sfData = last4.map(m => payload.months[m]?.sf?.medianPrice || 0);
+const condoData = last4.map(m => payload.months[m]?.condo?.medianPrice || 0);
 
-         const labels = last4.map(m => m.split("-")[1]);
+const labels = last4.map(m => m.split("-")[1]);
 
-         renderChart(sfChart, "Median Price Trend", sfData, labels);
-         renderChart(condoChart, "Median Price Trend", condoData, labels);
+renderChart(sfChart, "Median Price Trend", sfData, labels);
+renderChart(condoChart, "Median Price Trend", condoData, labels);
         
         if (printUpdated && payload?.updatedAt) {
           try { printUpdated.textContent = "Updated " + new Date(payload.updatedAt).toLocaleDateString(); } catch {}
