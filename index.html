@@ -102,25 +102,39 @@
     .pill{ background:var(--brand-50); border-color:var(--brand-200); }
     .badge{ background:var(--brand-50); border:1px solid var(--brand-200); color:var(--brand-700); padding:4px 8px; border-radius:999px; font-size:12px; }
 
-    .hero{
-      background:
-        radial-gradient(600px 220px at 85% -10%, rgba(197,163,73,.18), transparent 70%),
-        radial-gradient(520px 180px at -10% 110%, rgba(197,163,73,.12), transparent 70%),
-        var(--card);
-    }
-    .card{ position:relative; transition:box-shadow .2s ease, transform .2s ease; }
-    @media(hover:hover){ .card:hover{ box-shadow:0 12px 26px rgba(0,0,0,.10); transform:translateY(-1px); } }
-    .card::before{ content:""; position:absolute; top:0; left:0; right:0; height:3px; border-radius:var(--radius) var(--radius) 0 0;
-      background:linear-gradient(90deg, var(--brand), rgba(197,163,73,0) 65%); pointer-events:none; }
-    .kpi .value{ color:var(--ink); font-variant-numeric:tabular-nums; letter-spacing:-.2px; text-shadow:0 1px 0 rgba(255,255,255,.55); }
-    @supports (-webkit-background-clip:text){
-      .kpi .value{
-        background:linear-gradient(180deg, var(--ink) 0%, rgba(31,41,55,.90) 55%, rgba(31,41,55,.76) 100%);
-        -webkit-background-clip:text; -webkit-text-fill-color:transparent; text-shadow:none;
-      }
-    }
-    .card h2{ position:relative; padding-bottom:6px; }
-    .card h2::after{ content:""; position:absolute; left:0; bottom:0; width:42px; height:3px;
+   .hero{
+  background:
+    radial-gradient(600px 220px at 85% -10%, rgba(197,163,73,.18), transparent 70%),
+    radial-gradient(520px 180px at -10% 110%, rgba(197,163,73,.12), transparent 70%),
+    var(--card);
+}
+
+.card{ position:relative; transition:box-shadow .2s ease, transform .2s ease; }
+@media(hover:hover){ .card:hover{ box-shadow:0 12px 26px rgba(0,0,0,.10); transform:translateY(-1px); } }
+.card::before{ content:""; position:absolute; top:0; left:0; right:0; height:3px; border-radius:var(--radius) var(--radius) 0 0;
+  background:linear-gradient(90deg, var(--brand), rgba(197,163,73,0) 65%); pointer-events:none; }
+
+.kpi .value{ color:var(--ink); font-variant-numeric:tabular-nums; letter-spacing:-.2px; text-shadow:0 1px 0 rgba(255,255,255,.55); }
+
+@supports (-webkit-background-clip:text){
+  .kpi .value{
+    background:linear-gradient(180deg, var(--ink) 0%, rgba(31,41,55,.90) 55%, rgba(31,41,55,.76) 100%);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; text-shadow:none;
+  }
+}
+
+.chart-box {
+  margin-top: 14px;
+  border: 1px solid #eef0f3;
+  border-radius: 14px;
+  background: #fff;
+  min-height: 180px;
+  padding: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.card h2{ position:relative; padding-bottom:6px; }
+.card h2::after{ content:""; position:absolute; left:0; bottom:0; width:42px; height:3px;
       background:linear-gradient(90deg, var(--brand), rgba(197,163,73,0)); border-radius:2px; pointer-events:none; }
     @media print{ .card h2::after{ display:none; } }
 
@@ -297,6 +311,7 @@
           <span class="badge" id="sfMonth">—</span>
         </div>
         <div class="kpis" id="sfKpis"></div>
+        <div id="sfChart" class="chart-box" aria-label="Single-Family trend chart"></div>
         <div class="foot">
           <span id="sfNote"></span>
           <a id="sfReport" class="link" href="https://www.narrpr.com/reports-v2/c296fac6-035d-4e9a-84fd-28455ab0339f/pdf" target="_blank" rel="noopener">Full county report</a>
@@ -309,6 +324,7 @@
           <span class="badge" id="condoMonth">—</span>
         </div>
         <div class="kpis" id="condoKpis"></div>
+        <div id="condoChart" class="chart-box" aria-label="Condo trend chart"></div>
         <div class="foot">
           <span id="condoNote"></span>
           <a id="condoReport" class="link" href="https://www.narrpr.com/reports-v2/5a675486-5c7b-4bb0-9946-0cffa3070f05/pdf" target="_blank" rel="noopener">Full county report</a>
