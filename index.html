@@ -555,7 +555,10 @@ function renderEmptyChart(el, title) {
 
         if (sfReport && cur?.sfReport) sfReport.href = cur.sfReport;
         if (condoReport && cur?.condoReport) condoReport.href = cur.condoReport;
-
+        
+         renderEmptyChart(sfChart, "Median Price Trend");
+         renderEmptyChart(condoChart, "Median Price Trend");
+        
         if (printUpdated && payload?.updatedAt) {
           try { printUpdated.textContent = "Updated " + new Date(payload.updatedAt).toLocaleDateString(); } catch {}
         }
