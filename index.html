@@ -132,7 +132,20 @@
   padding: 12px;
   box-shadow: var(--shadow-sm);
 }
+.chart-toggle {
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
 
+.chart-toggle.active {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
 .card h2{ position:relative; padding-bottom:6px; }
 .card h2::after{ content:""; position:absolute; left:0; bottom:0; width:42px; height:3px;
       background:linear-gradient(90deg, var(--brand), rgba(197,163,73,0)); border-radius:2px; pointer-events:none; }
