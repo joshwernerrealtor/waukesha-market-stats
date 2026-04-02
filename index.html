@@ -311,7 +311,13 @@
           <span class="badge" id="sfMonth">—</span>
         </div>
         <div class="kpis" id="sfKpis"></div>
-        <div id="sfChart" class="chart-box" aria-label="Single-Family trend chart"></div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+  <button class="chart-toggle" data-type="price" data-target="sf">Price</button>
+  <button class="chart-toggle" data-type="closed" data-target="sf">Sales</button>
+  <button class="chart-toggle" data-type="supply" data-target="sf">Supply</button>
+</div>
+
+<div id="sfChart" class="chart-box"></div>
         <div class="foot">
           <span id="sfNote"></span>
           <a id="sfReport" class="link" href="https://www.narrpr.com/reports-v2/c296fac6-035d-4e9a-84fd-28455ab0339f/pdf" target="_blank" rel="noopener">Full county report</a>
@@ -324,7 +330,13 @@
           <span class="badge" id="condoMonth">—</span>
         </div>
         <div class="kpis" id="condoKpis"></div>
-        <div id="condoChart" class="chart-box" aria-label="Condo trend chart"></div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+  <button class="chart-toggle" data-type="price" data-target="condo">Price</button>
+  <button class="chart-toggle" data-type="closed" data-target="condo">Sales</button>
+  <button class="chart-toggle" data-type="supply" data-target="condo">Supply</button>
+</div>
+
+<div id="condoChart" class="chart-box"></div>
         <div class="foot">
           <span id="condoNote"></span>
           <a id="condoReport" class="link" href="https://www.narrpr.com/reports-v2/5a675486-5c7b-4bb0-9946-0cffa3070f05/pdf" target="_blank" rel="noopener">Full county report</a>
