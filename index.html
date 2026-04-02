@@ -434,19 +434,23 @@
       const ENDPOINT = "/api/waukesha";
 
       // Elements
-      const $ = (q, el = document) => el.querySelector(q);
-      const updatedAtEl = $("#updatedAt");
-      const monthSelect = $("#monthSelect");
-      const sfMonthEl = $("#sfMonth");
-      const condoMonthEl = $("#condoMonth");
-      const sfKpis = $("#sfKpis");
-      const condoKpis = $("#condoKpis");
-      const sfReport = $("#sfReport");
-      const condoReport = $("#condoReport");
-      const printUpdated = $("#printUpdated");
-      const printBtn = $("#printBtn");
-      const searchInput = $("#searchInput");
-      const communityGrid = $("#communityGrid");
+const $ = (q, el = document) => el.querySelector(q);
+const updatedAtEl = $("#updatedAt");
+const monthSelect = $("#monthSelect");
+const sfMonthEl = $("#sfMonth");
+const condoMonthEl = $("#condoMonth");
+const sfKpis = $("#sfKpis");
+const condoKpis = $("#condoKpis");
+
+const sfChart = $("#sfChart");
+const condoChart = $("#condoChart");
+
+const sfReport = $("#sfReport");
+const condoReport = $("#condoReport");
+const printUpdated = $("#printUpdated");
+const printBtn = $("#printBtn");
+const searchInput = $("#searchInput");
+const communityGrid = $("#communityGrid");
 
       const COMMUNITIES = [
         { name: "Brookfield", url: "https://www.narrpr.com/reports-v2/97a381b7-10f7-40e6-9e36-852d9a194cdf/pdf" },
